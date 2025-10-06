@@ -30,7 +30,9 @@ export default defineConfig([
 					useTabs: true,
 					singleQuote: true,
 					printWidth: 120,
-					jsxSingleQuote: true
+					jsxSingleQuote: true,
+					objectCurlyNewline: 'off',
+					'no-multiple-empty-lines': 'off'
 				}
 			]
 		},

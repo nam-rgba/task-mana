@@ -1,0 +1,14 @@
+import 'reflect-metadata'
+import dotenv from 'dotenv'
+dotenv.config()
+import { DataSource } from 'typeorm'
+import { User } from '../model/User.js'
+import { Token } from '~/model/Token.js'
+
+export const AppDataSource = new DataSource({
+	type: 'postgres',
+	url: process.env.DATABASE_URL,
+	synchronize: true,
+	logging: false,
+	entities: [User, Token]
+})

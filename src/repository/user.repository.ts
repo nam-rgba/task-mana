@@ -1,12 +1,20 @@
-import { Prisma, User } from '~/db/generated/prisma/index.js'
-import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '../constants/default-query.js'
-
-const userModel = prisma.user
+// user.repository.ts
+import { ILike } from 'typeorm'
+import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '~/constants/default-query.js'
+import { AppDataSource } from '~/db/data-source.js'
+import { User } from '~/model/User.js'
 
 interface IQuery {
 	page: number
 	limit: number
 	skip?: number
+}
+
+type QueryFilter = {
+	q?: string
+	email?: string
+	name?: string
+	[key: string]: any
 }
 
 const normalizePaging = ({ page, limit, skip }: IQuery) => {
@@ -22,89 +30,75 @@ const normalizePaging = ({ page, limit, skip }: IQuery) => {
 	return { skip: _skip, limit: _limit, page }
 }
 
-type QueryFilter = {
-	q?: string
-	email?: string
-	name?: string
-	[key: string]: any
-}
-
 const buildFilter = (query: QueryFilter = {}) => {
 	const { q, email, name } = query
 	const filter: any = {}
 
 	if (q) {
-		const rx = new RegExp(
-			String(q)
-				.trim()
-				.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-			'i'
-		)
-		filter.OR = [{ name: rx }, { email: rx }]
+		filter.where = [{ name: ILike(`%${q}%`) }, { email: ILike(`%${q}%`) }]
 	}
-	if (email) filter.email = { equals: email }
-	if (name) filter.name = new RegExp(String(name), 'i')
+
+	if (email) {
+		filter.where = { ...(filter.where || {}), email }
+	}
+
+	if (name) {
+		filter.where = { ...(filter.where || {}), name: ILike(`%${name}%`) }
+	}
 
 	return filter
 }
 
-interface FindAllOptions {
-	page?: number
-	limit?: number
-	skip?: number
-	query?: QueryFilter
-	sort?: string
-	select?: any
-}
+export const getUserRepository = () => {
+	const repo = AppDataSource.getRepository(User)
 
-const findAll = async ({
-	page = DEFAULT_PAGE,
-	limit = DEFAULT_LIMIT,
-	skip,
-	query,
-	sort = 'createdAt',
-	select
-}: FindAllOptions) => {
-	const { limit: _limit, skip: _skip } = normalizePaging({ page, limit, skip })
+	const findAll = async ({
+		page = DEFAULT_PAGE,
+		limit = DEFAULT_LIMIT,
+		skip,
+		query,
+		sort = 'createdAt'
+	}: {
+		page?: number
+		limit?: number
+		skip?: number
+		query?: QueryFilter
+		sort?: string
+	}) => {
+		const { limit: _limit, skip: _skip } = normalizePaging({ page, limit, skip })
+		const filter = buildFilter(query)
 
-	const filter = buildFilter(query)
+		const [users, total] = await repo.findAndCount({
+			where: filter.where,
+			skip: _skip,
+			take: _limit,
+			order: {
+				[sort.replace('-', '')]: sort.startsWith('-') ? 'DESC' : 'ASC'
+			}
+		})
 
-	const users = await userModel.findMany({
-		where: filter,
-		skip: _skip,
-		take: _limit,
-		orderBy: {
-			[sort.replace('-', '')]: sort.startsWith('-') ? 'desc' : 'asc'
-		},
-		select
-	})
+		const currentPage = Math.floor(_skip / _limit) + 1
+		const pages = Math.max(1, Math.ceil(total / _limit))
 
-	const total = await userModel.count({ where: filter })
-	const currentPage = Math.floor(_skip / _limit) + 1
-	const pages = Math.max(1, Math.ceil(total / _limit))
-
-	return {
-		users,
-		metadata: {
-			total,
-			currentPage,
-			pages
+		return {
+			users,
+			metadata: { total, currentPage, pages }
 		}
 	}
-}
 
-const findOne = async (q: any, select?: any): Promise<User | null> => {
-	return await userModel.findFirst({
-		where: q,
-		select
-	})
-}
+	const findOne = async (query: Partial<User>): Promise<User | null> => {
+		console.log('AppDataSource initialized:', AppDataSource.isInitialized)
+		return repo.findOneBy(query)
+	}
 
-const create = async (data: Prisma.UserCreateInput): Promise<User> => {
-	const newUser = await userModel.create({
-		data
-	})
-	return newUser
-}
+	const create = async (data: Partial<User>): Promise<User> => {
+		const newUser = repo.create(data)
+		return await repo.save(newUser)
+	}
 
-export { findOne, findAll, create }
+	return {
+		findAll,
+		findOne,
+		create
+	}
+}
