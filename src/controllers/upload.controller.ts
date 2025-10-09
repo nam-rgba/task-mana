@@ -17,11 +17,12 @@ class UploadController {
 
 		new SuccessResponse({
 			message: 'Upload image successfully',
+			statusCode: 200,
 			metadata: await CloudinaryService.uploadImageFromLocal({
 				filePath: file?.path as string,
 				folder: 'images'
 			})
-		})
+		}).send(res)
 	}
 }
 
