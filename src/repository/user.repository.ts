@@ -3,14 +3,15 @@ import { ILike } from 'typeorm'
 import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '~/constants/default-query.js'
 import { AppDataSource } from '~/db/data-source.js'
 import { User } from '~/model/User.js'
+import { BadRequestError, NotFoundError } from '~/utils/error.reponse.js'
 
-interface IQuery {
+export interface IQuery {
 	page: number
 	limit: number
 	skip?: number
 }
 
-type QueryFilter = {
+export type QueryFilter = {
 	q?: string
 	email?: string
 	name?: string
@@ -96,9 +97,24 @@ export const getUserRepository = () => {
 		return await repo.save(newUser)
 	}
 
+	const update = async (id: number, data: Partial<User>): Promise<User | null> => {
+		const foundUser = await repo.findOneBy({ id })
+		if (!foundUser) {
+			throw new NotFoundError('Not found user') // User not found
+		}
+
+		const filteredData = Object.fromEntries(Object.entries(data).filter(([_, value]) => value !== undefined))
+
+		Object.assign(foundUser, filteredData)
+
+		const updatedUser = await repo.save(foundUser)
+		return updatedUser
+	}
+
 	return {
 		findAll,
 		findOne,
-		create
+		create,
+		update
 	}
 }

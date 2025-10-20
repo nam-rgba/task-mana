@@ -54,12 +54,12 @@ const register = async (email: string, password: string) => {
 const login = async (email: string, password: string) => {
 	const existingUser = await getUserByEmail(email)
 	if (!existingUser) {
-		throw new BadRequestError('User does not exist')
+		throw new BadRequestError('Email or password is incorrect')
 	}
 
 	const isPasswordValid = await bcrypt.compare(password, existingUser.password)
 	if (!isPasswordValid) {
-		throw new BadRequestError('Invalid password')
+		throw new BadRequestError('Email or password is incorrect')
 	}
 
 	const accessKey = randomBytes(16).toString('hex')

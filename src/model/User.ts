@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm'
+import { Position } from '~/types/position.type.js'
 
 @Entity('users')
 export class User {
@@ -10,6 +11,15 @@ export class User {
 
 	@Column({ type: 'varchar' })
 	password: string
+
+	@Column({ type: 'varchar', default: '' })
+	name: string
+
+	@Column({ type: 'varchar', nullable: true })
+	avatar: string
+
+	@Column({ type: 'varchar', nullable: true })
+	position: Position
 
 	@CreateDateColumn()
 	createdAt!: Date
