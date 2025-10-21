@@ -21,6 +21,9 @@ export class User {
 	@Column({ type: 'varchar', nullable: true })
 	position: Position
 
+	@Column({ type: 'float', nullable: false, default: 0 })
+	yearOfExperience: number
+
 	@CreateDateColumn()
 	createdAt!: Date
 

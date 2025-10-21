@@ -8,6 +8,9 @@ export class Project {
 	@Column({ type: 'varchar', length: 255 })
 	name!: string
 
+	@Column({ type: 'varchar', length: 255, unique: true })
+	code!: string
+
 	@Column({ type: 'text', nullable: true })
 	description?: string
 
