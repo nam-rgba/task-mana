@@ -4,11 +4,12 @@ dotenv.config()
 import { DataSource } from 'typeorm'
 import { User } from '../model/User.js'
 import { Token } from '../model/Token.js'
+import { Task } from '~/model/Task.js'
 
 export const AppDataSource = new DataSource({
 	type: 'postgres',
 	url: process.env.DATABASE_URL,
 	synchronize: true,
 	logging: false,
-	entities: [User, Token]
+	entities: [User, Token, Task]
 })

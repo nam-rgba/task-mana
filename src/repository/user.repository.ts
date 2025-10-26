@@ -83,7 +83,9 @@ export const getUserRepository = () => {
 
 		return {
 			users,
-			metadata: { total, currentPage, pages }
+			total,
+			currentPage,
+			pages
 		}
 	}
 

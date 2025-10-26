@@ -2,14 +2,14 @@ import code from './res/status-code.js'
 import reason from './res/reason-pharse.js'
 
 export interface ISuccessResponse {
-	message: string
-	metadata?: any
+	message?: string
+	metadata: any
 	statusCode?: number
 }
 
 export class SuccessResponse {
-	public message: string
-	public metadata?: any
+	public message?: string
+	public metadata: any
 	public statusCode?: number
 
 	constructor({ message, statusCode, metadata }: ISuccessResponse) {

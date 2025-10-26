@@ -14,7 +14,6 @@ export class TaskService {
 	}
 
 	async createTask(data: Partial<Task>): Promise<Task> {
-		// bạn có thể validate hoặc kiểm tra business rule ở đây trước khi tạo
 		return this.repo.create(data)
 	}
 

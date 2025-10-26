@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm'
-import { TaskStatus } from '~/types/task.type.js'
+import { TaskPriority, TaskStatus } from '~/types/task.type.js'
 
 @Entity({ name: 'tasks' })
 export class Task {
@@ -36,10 +36,10 @@ export class Task {
 	@Column({ type: 'uuid', nullable: true })
 	parentTaskId?: string
 
-	@Column({ type: 'varchar', nullable: true })
+	@Column({ type: 'enum', enum: TaskPriority, nullable: true })
 	priority?: string
 
-	@Column({ type: 'number', nullable: true })
+	@Column({ type: 'int', nullable: true })
 	completedPercent?: number
 
 	@Column({ type: 'timestamp', nullable: true })
