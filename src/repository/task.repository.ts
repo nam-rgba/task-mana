@@ -77,7 +77,7 @@ export const getTaskRepository = () => {
 		const currentPage = Math.floor(_skip / _limit) + 1
 		const pages = Math.max(1, Math.ceil(total / _limit))
 
-		return { tasks, metadata: { total, currentPage, pages } }
+		return { tasks, page: { total, currentPage, pages } }
 	}
 
 	const findOne = async (id: string): Promise<Task | null> => {

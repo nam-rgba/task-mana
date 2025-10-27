@@ -13,6 +13,8 @@ class TaskController {
 
 	get = async (req: Request, res: Response, next: NextFunction) => {
 		new SuccessResponse({
+			message: 'Get tasks successfully!',
+			statusCode: 200,
 			metadata: await taskService.getTasks(req.params)
 		}).send(res)
 	}

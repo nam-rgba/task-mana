@@ -6,5 +6,6 @@ import AsyncHandler from '~/utils/async-handler.js'
 const router = Router()
 
 router.post('/', AsyncHandler(ctrl.create))
+router.get('/', AsyncHandler(ctrl.get))
 
 export { router as taskRouter }
