@@ -7,5 +7,6 @@ const router = Router()
 
 router.post('/', AsyncHandler(ctrl.create))
 router.get('/', AsyncHandler(ctrl.get))
+router.delete('/:id', AsyncHandler(ctrl.dlt))
 
 export { router as taskRouter }

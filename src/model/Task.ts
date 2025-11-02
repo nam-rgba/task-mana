@@ -1,10 +1,19 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm'
+import {
+	Entity,
+	PrimaryGeneratedColumn,
+	Column,
+	CreateDateColumn,
+	UpdateDateColumn,
+	ManyToOne,
+	JoinColumn
+} from 'typeorm'
 import { TaskPriority, TaskStatus } from '~/types/task.type.js'
+import { User } from './User.js'
 
 @Entity({ name: 'tasks' })
 export class Task {
-	@PrimaryGeneratedColumn('uuid')
-	id!: string
+	@PrimaryGeneratedColumn()
+	id: number
 
 	@Column({ type: 'varchar', length: 255 })
 	title!: string
@@ -15,8 +24,8 @@ export class Task {
 	@Column({ type: 'enum', enum: TaskStatus, default: TaskStatus.Pending })
 	status!: TaskStatus
 
-	@Column({ type: 'timestamp', nullable: true })
-	dueDate?: Date
+	@Column({ type: 'int', nullable: true })
+	dueDate?: number
 
 	@Column({ type: 'float', default: 0 })
 	estimateEffort: number
@@ -25,10 +34,18 @@ export class Task {
 	actualEffort: number
 
 	@Column({ type: 'int', nullable: true })
-	implementorId?: number
+	assigneeId?: number
+
+	@ManyToOne(() => User, { eager: false })
+	@JoinColumn({ name: 'assigneeId' })
+	assignee?: User
 
 	@Column({ type: 'int', nullable: true })
 	reviewerId?: number
+
+	@ManyToOne(() => User, { eager: false })
+	@JoinColumn({ name: 'reviewerId' })
+	reviewer?: User
 
 	@Column({ type: 'int', nullable: true })
 	projectId?: number
@@ -42,8 +59,8 @@ export class Task {
 	@Column({ type: 'int', nullable: true })
 	completedPercent?: number
 
-	@Column({ type: 'timestamp', nullable: true })
-	completedAt?: Date
+	@Column({ type: 'int', nullable: true })
+	completedAt?: number
 
 	@Column('text', { array: true, nullable: true })
 	fileUrls: string[]

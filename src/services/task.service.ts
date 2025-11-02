@@ -5,11 +5,17 @@ import { Task } from '~/model/Task.js'
 export class TaskService {
 	private repo = getTaskRepository()
 
-	async getTasks(params: { page?: number; limit?: number; skip?: number; query?: any; sort?: string }) {
-		return this.repo.findAll(params)
+	async getTasks(query: { page?: number; limit?: number; [key: string]: any }) {
+		const { page, limit, ...queries } = query
+		console.log('TaskService.getTasks called with query:', queries)
+		return await this.repo.findAll({
+			page,
+			limit,
+			query: queries
+		})
 	}
 
-	async getTaskById(id: string): Promise<Task | null> {
+	async getTaskById(id: number): Promise<Task | null> {
 		return this.repo.findOne(id)
 	}
 
@@ -17,11 +23,11 @@ export class TaskService {
 		return this.repo.create(data)
 	}
 
-	async updateTask(id: string, data: Partial<Task>): Promise<Task | null> {
+	async updateTask(id: number, data: Partial<Task>): Promise<Task | null> {
 		return this.repo.update(id, data)
 	}
 
-	async deleteTask(id: string): Promise<boolean> {
+	async deleteTask(id: number): Promise<boolean> {
 		return this.repo.remove(id)
 	}
 }

@@ -15,7 +15,17 @@ class TaskController {
 		new SuccessResponse({
 			message: 'Get tasks successfully!',
 			statusCode: 200,
-			metadata: await taskService.getTasks(req.params)
+			metadata: await taskService.getTasks(req.query)
+		}).send(res)
+	}
+
+	dlt = async (req: Request, res: Response, next: NextFunction) => {
+		const id = Number(req.params.id)
+		await taskService.deleteTask(id)
+		new SuccessResponse({
+			message: 'Delete task successfully!',
+			statusCode: 202,
+			metadata: null
 		}).send(res)
 	}
 }

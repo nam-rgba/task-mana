@@ -28,19 +28,14 @@ const normalizePaging = ({ page, limit, skip }: IQuery) => {
 }
 
 const buildFilter = (query: QueryFilter = {}) => {
-	const { q, title, completed } = query
+	const { assigneeId } = query
 	const filter: any = {}
 
-	if (q) {
-		filter.where = [{ title: ILike(`%${q}%`) }]
-	}
-
-	if (title) {
-		filter.where = { ...(filter.where || {}), title: ILike(`%${title}%`) }
-	}
-
-	if (completed !== undefined) {
-		filter.where = { ...(filter.where || {}), completed }
+	if (assigneeId !== undefined) {
+		filter.where = {
+			...filter.where,
+			assigneeId: Number(assigneeId)
+		}
 	}
 
 	return filter
@@ -52,7 +47,6 @@ export const getTaskRepository = () => {
 	const findAll = async ({
 		page = 1,
 		limit = 10,
-		skip,
 		query,
 		sort = 'createdAt'
 	}: {
@@ -62,7 +56,10 @@ export const getTaskRepository = () => {
 		query?: QueryFilter
 		sort?: string
 	}) => {
-		const { skip: _skip, limit: _limit } = normalizePaging({ page, limit, skip })
+		const { skip: _skip, limit: _limit } = normalizePaging({ page, limit })
+		console.log(
+			`Fetching tasks: page=${page}, limit=${limit}, skip=${_skip}, query=${JSON.stringify(query)}, sort=${sort}`
+		)
 		const filter = buildFilter(query)
 
 		const [tasks, total] = await repo.findAndCount({
@@ -70,8 +67,9 @@ export const getTaskRepository = () => {
 			skip: _skip,
 			take: _limit,
 			order: {
-				[sort.replace('-', '')]: sort.startsWith('-') ? 'DESC' : 'ASC'
-			}
+				createdAt: 'DESC'
+			},
+			relations: ['assignee']
 		})
 
 		const currentPage = Math.floor(_skip / _limit) + 1
@@ -80,7 +78,7 @@ export const getTaskRepository = () => {
 		return { tasks, page: { total, currentPage, pages } }
 	}
 
-	const findOne = async (id: string): Promise<Task | null> => {
+	const findOne = async (id: number): Promise<Task | null> => {
 		return await repo.findOneBy({ id })
 	}
 
@@ -89,14 +87,14 @@ export const getTaskRepository = () => {
 		return await repo.save(task)
 	}
 
-	const update = async (id: string, data: Partial<Task>): Promise<Task | null> => {
+	const update = async (id: number, data: Partial<Task>): Promise<Task | null> => {
 		const task = await repo.findOneBy({ id })
 		if (!task) return null
 		const updated = repo.merge(task, data)
 		return await repo.save(updated)
 	}
 
-	const remove = async (id: string): Promise<boolean> => {
+	const remove = async (id: number): Promise<boolean> => {
 		const result = await repo.delete(id)
 		return !!result.affected && result.affected > 0
 	}
