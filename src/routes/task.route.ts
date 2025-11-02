@@ -6,6 +6,7 @@ import AsyncHandler from '~/utils/async-handler.js'
 const router = Router()
 
 router.post('/', AsyncHandler(ctrl.create))
+router.patch('/:id', AsyncHandler(ctrl.update))
 router.get('/', AsyncHandler(ctrl.get))
 router.delete('/:id', AsyncHandler(ctrl.dlt))
 

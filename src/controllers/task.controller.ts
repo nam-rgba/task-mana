@@ -11,6 +11,15 @@ class TaskController {
 		new CreatedResponse('Create task successfully!', 201, await taskService.createTask(req.body)).send(res)
 	}
 
+	update = async (req: Request, res: Response, next: NextFunction) => {
+		const id = Number(req.params.id)
+		new SuccessResponse({
+			message: 'Update task successfully!',
+			statusCode: 201,
+			metadata: await taskService.updateTask(id, req.body)
+		}).send(res)
+	}
+
 	get = async (req: Request, res: Response, next: NextFunction) => {
 		new SuccessResponse({
 			message: 'Get tasks successfully!',
