@@ -19,6 +19,7 @@
 	"type": "module",
 	"dependencies": {
 		"bcryptjs": "^3.0.2",
+		"class-validator": "^0.14.2",
 		"cloudinary": "^2.7.0",
 		"compression": "^1.8.1",
 		"cors": "^2.8.5",

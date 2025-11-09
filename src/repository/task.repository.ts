@@ -1,7 +1,6 @@
 // src/repository/task.repository.ts
 import { AppDataSource } from '~/db/data-source.js'
 import { Task } from '~/model/Task.js'
-import { ILike } from 'typeorm'
 
 interface IQuery {
 	page: number
