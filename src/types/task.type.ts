@@ -12,6 +12,19 @@ export enum TaskPriority {
 	Urgent = 'URGENT'
 }
 
+export enum TaskType {
+	Feature = 'FEATURE',
+	Bug = 'BUG',
+	Improvement = 'IMPROVEMENT',
+	Research = 'RESEARCH',
+	Documentation = 'DOCUMENTATION',
+	Testing = 'TESTING',
+	Deployment = 'DEPLOYMENT',
+	Enhancement = 'ENHANCEMENT',
+	Maintenance = 'MAINTENANCE',
+	Other = 'OTHER'
+}
+
 export interface Task {
 	id: number
 	title: string

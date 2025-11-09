@@ -7,7 +7,7 @@ import {
 	ManyToOne,
 	JoinColumn
 } from 'typeorm'
-import { TaskPriority, TaskStatus } from '~/types/task.type.js'
+import { TaskPriority, TaskStatus, TaskType } from '~/types/task.type.js'
 import { User } from './User.js'
 
 @Entity({ name: 'tasks' })
@@ -23,6 +23,9 @@ export class Task {
 
 	@Column({ type: 'enum', enum: TaskStatus, default: TaskStatus.Pending })
 	status!: TaskStatus
+
+	@Column({ type: 'enum', enum: TaskType, default: TaskType.Feature })
+	type!: TaskType
 
 	@Column({ type: 'int', nullable: true })
 	dueDate?: number
