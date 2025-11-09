@@ -1,11 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, OneToMany } from 'typeorm'
 import { Position } from '~/types/position.type.js'
+import { TeamMember } from './teamMember.entity.js'
+import { Project } from './Project.entity.js'
 
 @Entity('users')
 export class User {
 	@PrimaryGeneratedColumn()
 	id: number
 
+	@Index()
 	@Column({ type: 'varchar', length: 225, unique: true })
 	email: string
 
@@ -23,6 +26,13 @@ export class User {
 
 	@Column({ type: 'float', nullable: false, default: 0 })
 	yearOfExperience: number
+
+	// team, 1 user có thể ở trong nhiều team 1 lúc
+	@OneToMany(() => TeamMember, (tm) => tm.user)
+	teamMemberships: TeamMember[]
+
+	@OneToMany(() => Project, (p) => p.lead)
+	leadingProjects: Project[]
 
 	@CreateDateColumn()
 	createdAt!: Date
