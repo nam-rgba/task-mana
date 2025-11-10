@@ -1,4 +1,4 @@
-import { Token } from '~/model/Token.js'
+import { Token } from '~/model/token.entity.js'
 import { TokenRepository } from '~/repository/token.repository.js'
 
 const sessionRepo = new TokenRepository()

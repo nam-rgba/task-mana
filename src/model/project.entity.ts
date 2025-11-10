@@ -1,7 +1,7 @@
 import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm'
 import { AppBaseEntity } from './base.entity.js'
-import { Team } from './Team.entity.js'
-import { User } from './User.js'
+import { Team } from './team.entity.js'
+import { User } from './user.entity.js'
 import { ProjectType, ProjectStatus, ProjectVisibility, DefaultAssigneeType } from './enums/project.enum.js'
 
 @Entity('projects')

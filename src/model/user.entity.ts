@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, OneToMany } from 'typeorm'
 import { Position } from '~/types/position.type.js'
 import { TeamMember } from './teamMember.entity.js'
-import { Project } from './Project.entity.js'
+import { Project } from './project.entity.js'
 
 @Entity('users')
 export class User {

@@ -1,5 +1,5 @@
 import { AppDataSource } from '~/db/data-source.js'
-import { Token } from '~/model/Token.js'
+import { Token } from '~/model/token.entity.js'
 
 interface ITokenPayload {
 	userId: number

@@ -1,7 +1,7 @@
 import { Entity, ManyToOne, Column, Unique, JoinColumn } from 'typeorm'
 import { AppBaseEntity } from './base.entity.js'
-import { Team } from './Team.entity.js'
-import { User } from './User.js'
+import { Team } from './team.entity.js'
+import { User } from './user.entity.js'
 import { TeamMemberRole } from './enums/team-role.enum.js'
 
 @Entity('team_members')

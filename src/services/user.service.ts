@@ -1,4 +1,4 @@
-import { User } from '~/model/User.js'
+import { User } from '~/model/user.entity.js'
 import { getUserRepository } from '~/repository/user.repository.js'
 
 const userRepo = getUserRepository()

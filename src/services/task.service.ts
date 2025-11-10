@@ -1,6 +1,6 @@
 // src/service/task.service.ts
 import { getTaskRepository } from '~/repository/task.repository.js'
-import { Task } from '~/model/Task.js'
+import { Task } from '~/model/task.entity.js'
 
 export class TaskService {
 	private repo = getTaskRepository()

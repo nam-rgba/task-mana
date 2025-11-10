@@ -1,8 +1,8 @@
-import { Entity, Column, Index, OneToMany, ManyToOne, JoinColumn } from 'typeorm'
+import { Entity, Column, Index, OneToMany, ManyToOne, JoinColumn, PrimaryGeneratedColumn } from 'typeorm'
 import { AppBaseEntity } from './base.entity.js'
 import { TeamMember } from './teamMember.entity.js'
-import { User } from './User.js'
-import { Project } from './Project.entity.js'
+import { User } from './user.entity.js'
+import { Project } from './project.entity.js'
 
 @Entity('teams')
 export class Team extends AppBaseEntity {
@@ -26,8 +26,8 @@ export class Team extends AppBaseEntity {
 	@JoinColumn({ name: 'leadId' })
 	lead?: User
 
-	@Column({ type: 'uuid', nullable: true })
-	leadId?: string
+	@Column({ type: 'int', nullable: true })
+	leadId?: number
 
 	@Column({ type: 'boolean', default: true })
 	isActive: boolean

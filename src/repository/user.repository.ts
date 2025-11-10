@@ -2,7 +2,7 @@
 import { ILike } from 'typeorm'
 import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '~/constants/default-query.js'
 import { AppDataSource } from '~/db/data-source.js'
-import { User } from '~/model/User.js'
+import { User } from '~/model/user.entity.js'
 import { BadRequestError, NotFoundError } from '~/utils/error.reponse.js'
 
 export interface IQuery {
@@ -91,7 +91,7 @@ export const getUserRepository = () => {
 
 	const findOne = async (query: Partial<User>): Promise<User | null> => {
 		console.log('AppDataSource initialized:', AppDataSource.isInitialized)
-		return repo.findOneBy(query)
+		return repo.findOneBy(query as { id: number })
 	}
 
 	const create = async (data: Partial<User>): Promise<User> => {

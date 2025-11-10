@@ -2,7 +2,7 @@ import { PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateC
 
 export abstract class AppBaseEntity {
 	@PrimaryGeneratedColumn()
-	id: string
+	id: number
 
 	@CreateDateColumn({ type: 'timestamptz' })
 	createdAt: Date

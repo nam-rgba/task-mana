@@ -14,6 +14,7 @@ console.log('first', process.env.DATABASE_URL)
 
 import morgan from 'morgan'
 import { AppDataSource } from './db/data-source.js'
+import bodyParser from 'body-parser'
 
 app.use(morgan('dev'))
 app.use(cors())
@@ -26,6 +27,7 @@ AppDataSource.initialize()
 	})
 	.catch((err) => console.error('❌ DB init error:', err))
 
+app.use(bodyParser.json())
 app.use('/api', router)
 
 app.use((req, res, next) => {

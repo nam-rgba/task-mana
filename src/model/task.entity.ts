@@ -8,7 +8,7 @@ import {
 	JoinColumn
 } from 'typeorm'
 import { TaskPriority, TaskStatus, TaskType } from '~/types/task.type.js'
-import { User } from './User.js'
+import { User } from './user.entity.js'
 
 @Entity({ name: 'tasks' })
 export class Task {

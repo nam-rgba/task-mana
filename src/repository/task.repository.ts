@@ -1,6 +1,6 @@
 // src/repository/task.repository.ts
 import { AppDataSource } from '~/db/data-source.js'
-import { Task } from '~/model/Task.js'
+import { Task } from '~/model/task.entity.js'
 
 interface IQuery {
 	page: number
