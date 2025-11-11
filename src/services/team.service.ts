@@ -24,5 +24,10 @@ class TeamService {
 		if (existingTeam) {
 			throw new Error(`Team with key ${teamData.key} already exists!`)
 		}
+
+		throw new Error('Method not implemented.')
 	}
 }
+
+const teamService = new TeamService()
+export { teamService, TeamService }

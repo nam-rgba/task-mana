@@ -9,7 +9,7 @@ export function validate(schema: z.ZodObject<any, any>) {
 			req.body = result.data
 			next()
 		} else {
-			throw new BadRequestError(`Invalid request data: ${result.error.message}`)
+			throw new BadRequestError(`Invalid request data: ${result.error.issues.map((i) => i.message).join(', ')}`)
 		}
 	}
 }
