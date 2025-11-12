@@ -11,15 +11,15 @@ export class TeamMember extends AppBaseEntity {
 	@JoinColumn({ name: 'teamId' })
 	team: Team
 
-	@Column({ type: 'uuid' })
-	teamId: string
+	@Column({ type: 'int' })
+	teamId: number
 
 	@ManyToOne(() => User, (user) => user.teamMemberships, { onDelete: 'CASCADE' })
 	@JoinColumn({ name: 'userId' })
 	user: User
 
-	@Column({ type: 'uuid' })
-	userId: string
+	@Column({ type: 'int' })
+	userId: number
 
 	@Column({
 		type: 'enum',
