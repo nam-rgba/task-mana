@@ -1,4 +1,6 @@
 // src/repository/task.repository.ts
+import dayjs from 'dayjs'
+import { Between } from 'typeorm'
 import { AppDataSource } from '~/db/data-source.js'
 import { Task } from '~/model/task.entity.js'
 
@@ -27,7 +29,7 @@ const normalizePaging = ({ page, limit, skip }: IQuery) => {
 }
 
 const buildFilter = (query: QueryFilter = {}) => {
-	const { assigneeId } = query
+	const { assigneeId, dueDate } = query
 	const filter: any = {}
 
 	if (assigneeId !== undefined) {
@@ -35,6 +37,16 @@ const buildFilter = (query: QueryFilter = {}) => {
 			...filter.where,
 			assigneeId: Number(assigneeId)
 		}
+	}
+
+	if (dueDate !== undefined) {
+		const start = dayjs.unix(Number(dueDate)).startOf('day').unix()
+		const end = dayjs.unix(Number(dueDate)).endOf('day').unix()
+		filter.where = {
+			...filter.where,
+			dueDate: Between(start, end)
+		}
+		console.log(`Filtering tasks with dueDate between ${start} and ${end}, dueDate param: ${dueDate}`)
 	}
 
 	return filter
