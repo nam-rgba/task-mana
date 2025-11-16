@@ -1,12 +1,10 @@
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: .
     container_name: raise_backend
     restart: always
     env_file:
-      - ./backend/.env.production
+      - ./.env.production
     ports:
       - '3000:3000'
     depends_on:
