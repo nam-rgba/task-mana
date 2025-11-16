@@ -18,7 +18,7 @@ services:
     environment:
       POSTGRES_USER: root # user mặc định
       POSTGRES_PASSWORD: passed # password mặc định
-      POSTGRES_DB: raise # tên database mặc định khi start
+      POSTGRES_DB: taskmanager # tên database mặc định khi start
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U root']
       interval: 5s
