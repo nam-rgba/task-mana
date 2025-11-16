@@ -102,9 +102,6 @@ export const getUserRepository = () => {
 				password: type === 'AUTH' ? true : false
 			}
 		})
-		if (!user) {
-			throw new NotFoundError('Not found user')
-		}
 		return user
 	}
 
