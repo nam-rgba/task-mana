@@ -23,7 +23,7 @@ export class Project extends AppBaseEntity {
 		onDelete: 'RESTRICT' // hoặc CASCADE tùy triết lý
 	})
 	@JoinColumn({ name: 'teamId' })
-	team: Team
+	team: Awaited<Team>
 
 	@Column({ type: 'uuid' })
 	teamId: string
@@ -34,7 +34,7 @@ export class Project extends AppBaseEntity {
 		onDelete: 'SET NULL'
 	})
 	@JoinColumn({ name: 'leadId' })
-	lead?: User
+	lead?: Awaited<User>
 
 	@Column({ type: 'uuid', nullable: true })
 	leadId?: string

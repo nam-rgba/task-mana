@@ -24,7 +24,7 @@ export class Team extends AppBaseEntity {
 
 	@ManyToOne(() => User, { nullable: true })
 	@JoinColumn({ name: 'leadId' })
-	lead?: User
+	lead?: Awaited<User>
 
 	@Column({ type: 'int', nullable: true })
 	leadId?: number
@@ -42,8 +42,8 @@ export class Team extends AppBaseEntity {
 	}
 
 	@OneToMany(() => TeamMember, (tm) => tm.team)
-	members: TeamMember[]
+	members: Awaited<TeamMember[]>
 
 	@OneToMany(() => Project, (project) => project.team)
-	projects: Project[]
+	projects: Awaited<Project[]>
 }

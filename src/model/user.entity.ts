@@ -29,10 +29,10 @@ export class User {
 
 	// team, 1 user có thể ở trong nhiều team 1 lúc
 	@OneToMany(() => TeamMember, (tm) => tm.user)
-	teamMemberships: TeamMember[]
+	teamMemberships: Awaited<TeamMember[]>
 
 	@OneToMany(() => Project, (p) => p.lead)
-	leadingProjects: Project[]
+	leadingProjects: Awaited<Project[]>
 
 	@CreateDateColumn()
 	createdAt!: Date
