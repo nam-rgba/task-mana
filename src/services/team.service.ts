@@ -61,6 +61,14 @@ class TeamService {
 
 		return { ...newTeam, lead: checkLeadId, members: [] }
 	}
+
+	async getTeamById(teamId: number) {
+		const team = await this.teamRepository.findOneById(teamId)
+		if (!team) {
+			throw new NotFoundError(`Team with id ${teamId} not found!`)
+		}
+		return team
+	}
 }
 
 const teamService = new TeamService()

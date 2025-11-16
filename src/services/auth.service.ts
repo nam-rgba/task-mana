@@ -84,7 +84,7 @@ const login = async (email: string, password: string) => {
 	})
 	if (!newUserWithToken) throw new BadRequestError('Create token row failed!')
 
-	const resUser = _.pick(existingUser, ['id', 'email'])
+	const resUser = _.pick(existingUser, ['id', 'email', 'avatar', 'name'])
 	return { user: resUser, token }
 }
 

@@ -89,9 +89,23 @@ export const getUserRepository = () => {
 		}
 	}
 
-	const findOne = async (query: Partial<User>): Promise<User | null> => {
-		console.log('AppDataSource initialized:', AppDataSource.isInitialized)
-		return repo.findOneBy(query as { id: number })
+	const findOne = async (query: Partial<User>, type?: string): Promise<User | null> => {
+		console.log('called with query', query)
+		const { id, email } = query
+		const user = await repo.findOne({
+			where: { ...(id ? { id } : {}), ...(email ? { email } : {}) },
+			select: {
+				id: true,
+				email: true,
+				name: true,
+				avatar: true,
+				password: type === 'AUTH' ? true : false
+			}
+		})
+		if (!user) {
+			throw new NotFoundError('Not found user')
+		}
+		return user
 	}
 
 	const create = async (data: Partial<User>): Promise<User> => {
