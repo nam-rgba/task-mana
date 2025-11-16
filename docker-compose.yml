@@ -1,6 +1,19 @@
-version: '3.8'
+version: '3.9'
 
 services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: raise_backend
+    restart: always
+    env_file:
+      - ./backend/.env.production
+    ports:
+      - '3000:3000'
+    depends_on:
+      - postgres
+
   postgres:
     image: postgres:latest
     container_name: postgres_raise_db
@@ -9,22 +22,8 @@ services:
       POSTGRES_USER: root # user mặc định
       POSTGRES_PASSWORD: passed # password mặc định
       POSTGRES_DB: raise # tên database mặc định khi start
-    ports:
-      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: pgadmin_web
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: doanngocnam3002@gmail.com
-      PGADMIN_DEFAULT_PASSWORD: passed
-    ports:
-      - '8888:80'
-    depends_on:
-      - postgres
 
 volumes:
   postgres_data:
