@@ -11,11 +11,11 @@ export interface IGetAllUsersOptions {
 }
 const { findOne, create } = userRepo
 
-export const getUserByEmail = async (email: string): Promise<User | null> => {
+export const getUserByEmail = async (email: string) => {
 	return await findOne({ email }, 'AUTH')
 }
 
-export const getUserById = async (id: number): Promise<User | null> => {
+export const getUserById = async (id: number) => {
 	return await findOne({ id })
 }
 

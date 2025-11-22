@@ -7,4 +7,5 @@ import AsyncHandler from '~/utils/async-handler.js'
 const router = Router()
 
 router.post('/', validate(CreateTeamSchema), AsyncHandler(teamController.create))
+router.get('/:id', AsyncHandler(teamController.getOneDetail))
 export { router as teamRouter }

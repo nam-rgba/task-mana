@@ -30,11 +30,27 @@ export const getTeamRepository = () => {
 		return await repo.save(team)
 	}
 
+	type getTeamDetailOptions = {
+		id: number
+	}
+
+	const findDetailTeam = async ({ id }: getTeamDetailOptions) => {
+		const team = await repo
+			.createQueryBuilder('team')
+			.leftJoin('team.members', 'tm')
+			.leftJoin('tm.user', 'user')
+			.where('team.id = :id', { id })
+			.select(['team', 'tm', 'user'])
+			.getOne()
+		return team
+	}
+
 	return {
 		findOneById,
 		findOneByKey,
 		findAll,
 		create,
-		update
+		update,
+		findDetailTeam
 	}
 }

@@ -3,7 +3,7 @@ import { TeamMemberRole } from '~/model/enums/team-role.enum.js'
 import { getTeamMemberRepository } from '~/repository/team-member.repository.js'
 import { getTeamRepository } from '~/repository/team.repository.js'
 import { getUserRepository } from '~/repository/user.repository.js'
-import { ForbiddenError, NotFoundError } from '~/utils/error.reponse.js'
+import { BadRequestError, ForbiddenError, NotFoundError } from '~/utils/error.reponse.js'
 
 class TeamService {
 	private teamRepository = getTeamRepository()
@@ -62,11 +62,28 @@ class TeamService {
 		return { ...newTeam, lead: checkLeadId, members: [] }
 	}
 
-	async getTeamById(teamId: number) {
-		const team = await this.teamRepository.findOneById(teamId)
-		if (!team) {
-			throw new NotFoundError(`Team with id ${teamId} not found!`)
+	async getTeamDetail(query: { id: number }, userId: number) {
+		// check for param first
+		if (!query.id) {
+			throw new BadRequestError('Team id is required')
 		}
+		//bên auth service mình đã check user tồn tại rồi nên ko cần check lại ở đây
+		if (!userId) {
+			throw new BadRequestError('User id is required')
+		}
+
+		// kiểm tra user có phải thành viên của team ko
+		const teamMember = await this.teamMemberRepository.findOneByUserAndTeamId(userId, query.id)
+		if (!teamMember) {
+			throw new ForbiddenError('User is not a member of this team, access denied.')
+		}
+
+		// tìm team theo id trước
+		const team = await this.teamRepository.findDetailTeam({ id: query.id })
+		if (!team) {
+			throw new NotFoundError(`Team with id ${query.id} not found!`)
+		}
+
 		return team
 	}
 }

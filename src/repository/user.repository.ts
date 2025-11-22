@@ -4,6 +4,7 @@ import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '~/constants/default-quer
 import { AppDataSource } from '~/db/data-source.js'
 import { User } from '~/model/user.entity.js'
 import { BadRequestError, NotFoundError } from '~/utils/error.reponse.js'
+import { getTeamMemberRepository } from './team-member.repository.js'
 
 export interface IQuery {
 	page: number
@@ -52,6 +53,7 @@ const buildFilter = (query: QueryFilter = {}) => {
 
 export const getUserRepository = () => {
 	const repo = AppDataSource.getRepository(User)
+	const teamMemberRepo = getTeamMemberRepository()
 
 	const findAll = async ({
 		page = DEFAULT_PAGE,
@@ -89,7 +91,7 @@ export const getUserRepository = () => {
 		}
 	}
 
-	const findOne = async (query: Partial<User>, type?: string): Promise<User | null> => {
+	const findOne = async (query: Partial<User>, type?: string) => {
 		console.log('called with query', query)
 		const { id, email } = query
 		const user = await repo.findOne({
@@ -102,7 +104,9 @@ export const getUserRepository = () => {
 				password: type === 'AUTH' ? true : false
 			}
 		})
-		return user
+
+		const lastTeam = await teamMemberRepo.findLastByUserId(user?.id || 0)
+		return { ...user, lastTeamId: lastTeam?.teamId }
 	}
 
 	const create = async (data: Partial<User>): Promise<User> => {

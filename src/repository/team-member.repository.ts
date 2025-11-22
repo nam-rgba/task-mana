@@ -26,10 +26,26 @@ export const getTeamMemberRepository = () => {
 		return await repo.save(teamMember)
 	}
 
+	const findLastByUserId = async (userId: number): Promise<TeamMember | null> => {
+		return await repo.findOne({
+			where: { userId },
+			select: {
+				teamId: true
+			},
+			order: { createdAt: 'DESC' }
+		})
+	}
+
+	const findOneByUserAndTeamId = async (userId: number, teamId: number): Promise<TeamMember | null> => {
+		return await repo.findOneBy({ userId, teamId })
+	}
+
 	return {
 		findOneById,
 		findAll,
 		create,
-		update
+		update,
+		findLastByUserId,
+		findOneByUserAndTeamId
 	}
 }

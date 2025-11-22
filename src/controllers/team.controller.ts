@@ -8,6 +8,13 @@ class TeamController {
 	create = async (req: Request, res: Response, next: NextFunction) => {
 		new CreatedResponse('Create team successfully!', 201, await teamService.createTeam(req.body)).send(res)
 	}
+
+	getOneDetail = async (req: Request, res: Response, next: NextFunction) => {
+		const teamId = Number(req.params.id)
+		const userId = req.headers['x-user-id'] as unknown as number
+		const teamDetail = await teamService.getTeamDetail({ id: teamId }, userId)
+		new CreatedResponse('Get team detail successfully!', 200, { team: teamDetail }).send(res)
+	}
 }
 
 const teamController = new TeamController()
