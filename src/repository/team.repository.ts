@@ -37,10 +37,11 @@ export const getTeamRepository = () => {
 	const findDetailTeam = async ({ id }: getTeamDetailOptions) => {
 		const team = await repo
 			.createQueryBuilder('team')
+			.leftJoin('team.projects', 'projects')
 			.leftJoin('team.members', 'tm')
 			.leftJoin('tm.user', 'user')
 			.where('team.id = :id', { id })
-			.select(['team', 'tm', 'user'])
+			.select(['team', 'tm', 'user', 'projects'])
 			.getOne()
 		return team
 	}

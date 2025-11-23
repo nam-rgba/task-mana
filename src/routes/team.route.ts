@@ -8,4 +8,5 @@ const router = Router()
 
 router.post('/', validate(CreateTeamSchema), AsyncHandler(teamController.create))
 router.get('/:id', AsyncHandler(teamController.getOneDetail))
+router.patch('/:id/member', AsyncHandler(teamController.addMember))
 export { router as teamRouter }

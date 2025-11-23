@@ -15,6 +15,12 @@ class TeamController {
 		const teamDetail = await teamService.getTeamDetail({ id: teamId }, userId)
 		new CreatedResponse('Get team detail successfully!', 200, { team: teamDetail }).send(res)
 	}
+
+	addMember = async (req: Request, res: Response, next: NextFunction) => {
+		const teamId = Number(req.params.id)
+		const updatedTeam = await teamService.addMemberToTeam({ teamId, ...req.body })
+		new CreatedResponse('Add member to team successfully!', 201, { team: updatedTeam }).send(res)
+	}
 }
 
 const teamController = new TeamController()

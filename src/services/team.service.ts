@@ -86,6 +86,32 @@ class TeamService {
 
 		return team
 	}
+
+	async addMemberToTeam({ teamId, userId, role }: { teamId: number; userId: number; role?: TeamMemberRole }) {
+		// check team exists
+		const team = await this.teamRepository.findOneById(teamId)
+		if (!team) {
+			throw new NotFoundError(`Team with id ${teamId} not found!`)
+		}
+		// check user exists
+		const user = await this.userRepository.findOne({ id: userId })
+		if (!user) {
+			throw new NotFoundError(`User with id ${userId} not found!`)
+		}
+		// check user is already a member of the team
+		const existingMember = await this.teamMemberRepository.findOneByUserAndTeamId(userId, teamId)
+		if (existingMember) {
+			throw new BadRequestError(`User with id ${userId} is already a member of team ${teamId}.`)
+		}
+
+		// create new team member
+		const newMember = await this.teamMemberRepository.create({
+			teamId,
+			userId,
+			role: role || TeamMemberRole.MEMBER
+		})
+		return newMember
+	}
 }
 
 const teamService = new TeamService()
