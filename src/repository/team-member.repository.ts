@@ -36,6 +36,13 @@ export const getTeamMemberRepository = () => {
 		})
 	}
 
+	const deleteOne = async (id: number): Promise<void> => {
+		const teamMember = await repo.findOneBy({ id })
+		if (teamMember) {
+			await repo.remove(teamMember)
+		}
+	}
+
 	const findOneByUserAndTeamId = async (userId: number, teamId: number): Promise<TeamMember | null> => {
 		return await repo.findOneBy({ userId, teamId })
 	}
@@ -46,6 +53,7 @@ export const getTeamMemberRepository = () => {
 		create,
 		update,
 		findLastByUserId,
-		findOneByUserAndTeamId
+		findOneByUserAndTeamId,
+		deleteOne
 	}
 }

@@ -8,8 +8,20 @@ export const getProjectRepository = () => {
 		return await repo.findOneBy({ id })
 	}
 
-	const findAll = async (): Promise<Project[]> => {
-		return await repo.find()
+	const findAll = async ({
+		page,
+		limit,
+		query
+	}: {
+		page?: number
+		limit?: number
+		query?: { [key: string]: any }
+	}): Promise<Project[]> => {
+		return await repo.find({
+			where: query,
+			skip: page && limit ? (page - 1) * limit : undefined,
+			take: limit
+		})
 	}
 
 	const create = async (data: Partial<Project>): Promise<Project> => {

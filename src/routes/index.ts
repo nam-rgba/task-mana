@@ -4,6 +4,7 @@ import { uploadRouter } from './upload.route.js'
 import { userRouter } from './user.route.js'
 import { taskRouter } from './task.route.js'
 import { teamRouter } from './team.route.js'
+import { projectRouter } from './project.route.js'
 
 const router = express.Router()
 
@@ -13,5 +14,6 @@ router.use('/upload', uploadRouter)
 router.use('/user', userRouter)
 router.use('/task', taskRouter)
 router.use('/team', teamRouter)
+router.use('/project', projectRouter)
 
 export { router }

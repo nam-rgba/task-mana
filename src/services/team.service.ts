@@ -112,6 +112,28 @@ class TeamService {
 		})
 		return newMember
 	}
+
+	async removeMemberFromTeam({ teamId, userId }: { teamId: number; userId: number }) {
+		// check team exists
+		const team = await this.teamRepository.findOneById(teamId)
+		if (!team) {
+			throw new NotFoundError(`Team with id ${teamId} not found!`)
+		}
+		// check user exists
+		const user = await this.userRepository.findOne({ id: userId })
+		if (!user) {
+			throw new NotFoundError(`User with id ${userId} not found!`)
+		}
+		// check user is a member of the team
+		const existingMember = await this.teamMemberRepository.findOneByUserAndTeamId(userId, teamId)
+		if (!existingMember) {
+			throw new BadRequestError(`User with id ${userId} is not a member of team ${teamId}.`)
+		}
+
+		// remove team member
+		const removedMember = await this.teamMemberRepository.deleteOne(existingMember.id)
+		return removedMember
+	}
 }
 
 const teamService = new TeamService()
