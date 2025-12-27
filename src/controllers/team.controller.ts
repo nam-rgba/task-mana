@@ -21,6 +21,12 @@ class TeamController {
 		const updatedTeam = await teamService.addMemberToTeam({ teamId, ...req.body })
 		new CreatedResponse('Add member to team successfully!', 201, { team: updatedTeam }).send(res)
 	}
+
+	removeMember = async (req: Request, res: Response, next: NextFunction) => {
+		const teamId = Number(req.params.id)
+		const updatedTeam = await teamService.removeMemberFromTeam({ teamId, ...req.body })
+		new CreatedResponse('Remove member from team successfully!', 200, { team: updatedTeam }).send(res)
+	}
 }
 
 const teamController = new TeamController()

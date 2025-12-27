@@ -6,11 +6,6 @@ import { ProjectType, ProjectStatus, ProjectVisibility, DefaultAssigneeType } fr
 
 @Entity('projects')
 export class Project extends AppBaseEntity {
-	// Key kiểu Jira: "CRM", "OPS", "MKT2025"
-	@Index({ unique: true })
-	@Column({ type: 'varchar', length: 20 })
-	key: string
-
 	@Column({ type: 'varchar', length: 200 })
 	name: string
 
@@ -25,8 +20,8 @@ export class Project extends AppBaseEntity {
 	@JoinColumn({ name: 'teamId' })
 	team: Awaited<Team>
 
-	@Column({ type: 'uuid' })
-	teamId: string
+	@Column({ type: 'int', nullable: true })
+	teamId: number
 
 	// Project Lead
 	@ManyToOne(() => User, (user) => user.leadingProjects, {
