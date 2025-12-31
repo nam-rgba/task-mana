@@ -9,5 +9,6 @@ router.post('/', AsyncHandler(ctrl.create))
 router.patch('/:id', AsyncHandler(ctrl.update))
 router.get('/', AsyncHandler(ctrl.get))
 router.delete('/:id', AsyncHandler(ctrl.dlt))
+router.post('/ai-gen', AsyncHandler(ctrl.genAiTask))
 
 export { router as taskRouter }

@@ -1,7 +1,6 @@
 import { Project } from '~/model/project.entity.js'
 import { getProjectRepository } from '~/repository/project.repository.js'
 import { getTeamRepository } from '~/repository/team.repository.js'
-import { ProjectDto } from '~/types/project.type.js'
 
 class ProjectService {
 	private repo = getProjectRepository()

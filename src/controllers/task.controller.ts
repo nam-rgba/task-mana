@@ -1,5 +1,6 @@
 // src/controller/task.controller.ts
 import { NextFunction, Request, Response } from 'express'
+import { aiGenService } from '~/services/ai/ai-gen.service.js'
 
 import { TaskService } from '~/services/task.service.js'
 import { CreatedResponse, SuccessResponse } from '~/utils/success.response.js'
@@ -35,6 +36,14 @@ class TaskController {
 			message: 'Delete task successfully!',
 			statusCode: 202,
 			metadata: null
+		}).send(res)
+	}
+
+	genAiTask = async (req: Request, res: Response, next: NextFunction) => {
+		new SuccessResponse({
+			message: 'AI generated task successfully!',
+			statusCode: 200,
+			metadata: await aiGenService.generateTask(req.body)
 		}).send(res)
 	}
 }
