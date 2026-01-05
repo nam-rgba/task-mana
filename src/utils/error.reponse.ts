@@ -1,7 +1,7 @@
 import code from './res/status-code.js'
 import reason from './res/reason-pharse.js'
 
-class ErrowResponse extends Error {
+class ErrorResponse extends Error {
 	constructor(
 		message: string,
 		public statusCode: number
@@ -11,34 +11,41 @@ class ErrowResponse extends Error {
 	}
 }
 
-class BadRequestError extends ErrowResponse {
+class BadRequestError extends ErrorResponse {
 	constructor(message = reason.BAD_REQUEST) {
 		super(message, code.BAD_REQUEST)
 	}
 }
 
-class UnauthorizedError extends ErrowResponse {
+class UnauthorizedError extends ErrorResponse {
 	constructor(message = reason.UNAUTHORIZED) {
 		super(message, code.UNAUTHORIZED)
 	}
 }
 
-class ForbiddenError extends ErrowResponse {
+class ForbiddenError extends ErrorResponse {
 	constructor(message = reason.FORBIDDEN) {
 		super(message, code.FORBIDDEN)
 	}
 }
 
-class NotFoundError extends ErrowResponse {
+class NotFoundError extends ErrorResponse {
 	constructor(message = reason.NOT_FOUND) {
 		super(message, code.NOT_FOUND)
 	}
 }
 
-class ConflictError extends ErrowResponse {
+class ConflictError extends ErrorResponse {
 	constructor(message = reason.CONFLICT) {
 		super(message, code.CONFLICT)
 	}
 }
 
-export { ErrowResponse, BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError }
+export {
+	ErrorResponse as ErrowResponse,
+	BadRequestError,
+	UnauthorizedError,
+	ForbiddenError,
+	NotFoundError,
+	ConflictError
+}

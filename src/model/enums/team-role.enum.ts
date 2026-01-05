@@ -3,5 +3,6 @@ export enum TeamMemberRole {
 	ADMIN = 'ADMIN',
 	LEAD = 'LEAD',
 	MEMBER = 'MEMBER',
+	QC = 'QC',
 	VIEWER = 'VIEWER'
 }

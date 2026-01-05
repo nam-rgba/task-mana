@@ -57,7 +57,7 @@ const login = async (email: string, password: string) => {
 		throw new BadRequestError('Email or password is incorrect')
 	}
 
-	const isPasswordValid = await bcrypt.compare(password, existingUser.password)
+	const isPasswordValid = await bcrypt.compare(password, existingUser.password!)
 	if (!isPasswordValid) {
 		throw new BadRequestError('Email or password is incorrect')
 	}
@@ -77,7 +77,7 @@ const login = async (email: string, password: string) => {
 	if (!token) throw new BadRequestError('Create token failed')
 
 	const newUserWithToken = sessionService.upsertSession({
-		userId: existingUser.id,
+		userId: existingUser.id!,
 		accessKey: accessKey,
 		refreshKey: refreshKey,
 		refreshToken: token.refreshToken
