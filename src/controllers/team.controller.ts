@@ -27,6 +27,12 @@ class TeamController {
 		const updatedTeam = await teamService.removeMemberFromTeam({ teamId, ...req.body })
 		new CreatedResponse('Remove member from team successfully!', 200, { team: updatedTeam }).send(res)
 	}
+
+	findAllTeamOfUser = async (req: Request, res: Response, next: NextFunction) => {
+		const userId = req.headers['x-user-id'] as unknown as number
+		const teams = await teamService.findAllTeamOfUser(userId)
+		new CreatedResponse('Get all teams of user successfully!', 200, { teams }).send(res)
+	}
 }
 
 const teamController = new TeamController()

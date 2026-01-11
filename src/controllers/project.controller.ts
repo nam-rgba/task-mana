@@ -10,6 +10,15 @@ class ProjectController {
 	create = async (req: Request, res: Response, next: NextFunction) => {
 		return new OKResponse('Create project successfully!', 201, await projectService.createProject(req.body)).send(res)
 	}
+
+	update = async (req: Request, res: Response, next: NextFunction) => {
+		const projectId = Number(req.params.id)
+		return new OKResponse(
+			'Update project successfully!',
+			201,
+			await projectService.updateProject(projectId, req.body)
+		).send(res)
+	}
 }
 
 const projectController = new ProjectController()

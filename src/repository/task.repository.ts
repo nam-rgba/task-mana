@@ -80,7 +80,7 @@ export const getTaskRepository = () => {
 			order: {
 				createdAt: 'DESC'
 			},
-			relations: ['assignee', 'reviewer']
+			relations: ['assignee', 'reviewer', 'project']
 		})
 
 		const currentPage = Math.floor(_skip / _limit) + 1

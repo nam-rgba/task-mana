@@ -134,6 +134,11 @@ class TeamService {
 		const removedMember = await this.teamMemberRepository.deleteOne(existingMember.id)
 		return removedMember
 	}
+
+	async findAllTeamOfUser(userId: number) {
+		const teams = await this.teamRepository.findAll({ userId })
+		return teams
+	}
 }
 
 const teamService = new TeamService()

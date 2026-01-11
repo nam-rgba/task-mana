@@ -9,6 +9,7 @@ import {
 } from 'typeorm'
 import { TaskPriority, TaskStatus, TaskType } from '~/types/task.type.js'
 import { User } from './user.entity.js'
+import { Project } from './project.entity.js'
 
 @Entity({ name: 'tasks' })
 export class Task {
@@ -52,6 +53,10 @@ export class Task {
 
 	@Column({ type: 'int', nullable: true })
 	projectId?: number
+
+	@ManyToOne(() => Project, { eager: false })
+	@JoinColumn({ name: 'projectId' })
+	project?: Project
 
 	@Column({ type: 'uuid', nullable: true })
 	parentTaskId?: string

@@ -6,4 +6,5 @@ const router = Router()
 
 router.get('/', AsyncHandler(projectController.getAll))
 router.post('/', AsyncHandler(projectController.create))
+router.patch('/:id', AsyncHandler(projectController.update))
 export { router as projectRouter }

@@ -27,6 +27,10 @@ class ProjectService {
 		const newProject = await this.repo.create(projectData)
 		return newProject
 	}
+
+	async updateProject(id: number, projectData: Partial<Project>) {
+		return await this.repo.update(id, projectData)
+	}
 }
 
 export const projectService = new ProjectService()

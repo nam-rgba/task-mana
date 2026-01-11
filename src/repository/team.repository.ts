@@ -12,8 +12,13 @@ export const getTeamRepository = () => {
 		return await repo.findOneBy({ key })
 	}
 
-	const findAll = async (): Promise<Team[]> => {
-		return await repo.find()
+	const findAll = async ({ userId }: { userId: number }): Promise<Team[]> => {
+		const teams = await repo
+			.createQueryBuilder('team')
+			.leftJoin('team.members', 'tm')
+			.where('tm.userId = :userId', { userId })
+			.getMany()
+		return teams
 	}
 
 	const create = async (data: Partial<Team>): Promise<Team> => {
