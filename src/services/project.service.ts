@@ -31,6 +31,10 @@ class ProjectService {
 	async updateProject(id: number, projectData: Partial<Project>) {
 		return await this.repo.update(id, projectData)
 	}
+
+	async deleteProject(id: number) {
+		return await this.repo.deleteProject(id)
+	}
 }
 
 export const projectService = new ProjectService()

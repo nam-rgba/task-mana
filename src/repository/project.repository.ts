@@ -38,10 +38,16 @@ export const getProjectRepository = () => {
 		return await repo.save(project)
 	}
 
+	const deleteProject = async (id: number): Promise<boolean> => {
+		const result = await repo.delete(id)
+		return !!(result.affected && result.affected > 0)
+	}
+
 	return {
 		findOneById,
 		findAll,
 		create,
-		update
+		update,
+		deleteProject
 	}
 }

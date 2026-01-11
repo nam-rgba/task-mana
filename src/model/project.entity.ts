@@ -15,7 +15,7 @@ export class Project extends AppBaseEntity {
 	// Project thuộc 1 team duy nhất
 	@ManyToOne(() => Team, (team) => team.projects, {
 		nullable: false,
-		onDelete: 'RESTRICT' // hoặc CASCADE tùy triết lý
+		onDelete: 'RESTRICT'
 	})
 	@JoinColumn({ name: 'teamId' })
 	team: Awaited<Team>

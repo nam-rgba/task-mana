@@ -19,6 +19,11 @@ class ProjectController {
 			await projectService.updateProject(projectId, req.body)
 		).send(res)
 	}
+
+	deleteProject = async (req: Request, res: Response, next: NextFunction) => {
+		const projectId = Number(req.params.id)
+		return new OKResponse('Delete project successfully!', 204, await projectService.deleteProject(projectId)).send(res)
+	}
 }
 
 const projectController = new ProjectController()
