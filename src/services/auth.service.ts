@@ -1,5 +1,5 @@
 import { BadRequestError } from '~/utils/error.reponse.js'
-import { getUserByEmail, createUser } from './user.service.js'
+import { getUserByEmail, createUser, checkRegistedEmail } from './user.service.js'
 import bcrypt from 'bcryptjs'
 import { randomBytes } from 'crypto'
 import { createTokenPair } from '~/utils/auth/auth.js'
@@ -10,7 +10,7 @@ const sessionService = new SessionService()
 
 const register = async (email: string, password: string) => {
 	// step 1: find if user exists
-	const existingUser = await getUserByEmail(email)
+	const existingUser = await checkRegistedEmail(email)
 
 	if (existingUser) {
 		throw new BadRequestError('User already exists')

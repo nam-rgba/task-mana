@@ -15,7 +15,8 @@ export const getTeamRepository = () => {
 	const findAll = async ({ userId }: { userId: number }): Promise<Team[]> => {
 		const teams = await repo
 			.createQueryBuilder('team')
-			.leftJoin('team.members', 'tm')
+			.leftJoinAndSelect('team.members', 'tm')
+			.leftJoinAndSelect('team.lead', 'lead')
 			.where('tm.userId = :userId', { userId })
 			.getMany()
 		return teams
@@ -42,11 +43,11 @@ export const getTeamRepository = () => {
 	const findDetailTeam = async ({ id }: getTeamDetailOptions) => {
 		const team = await repo
 			.createQueryBuilder('team')
-			.leftJoin('team.projects', 'projects')
-			.leftJoin('team.members', 'tm')
-			.leftJoin('tm.user', 'user')
+			.leftJoinAndSelect('team.projects', 'projects')
+			.leftJoinAndSelect('team.members', 'tm')
+			.leftJoinAndSelect('tm.user', 'user')
+			.leftJoinAndSelect('team.lead', 'lead')
 			.where('team.id = :id', { id })
-			.select(['team', 'tm', 'user', 'projects'])
 			.getOne()
 		return team
 	}

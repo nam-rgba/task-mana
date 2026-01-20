@@ -34,7 +34,8 @@ class TeamService {
 		}
 
 		// when create team, auto add lead as team member with role LEAD
-		if (teamData.leadId && checkLeadId && newTeam) {
+		if (checkLeadId && newTeam) {
+			console.log('Adding lead as team member with role LEADL=:', checkLeadId.id)
 			const teamMember = await this.teamMemberRepository.create({
 				teamId: newTeam.id,
 				userId: checkLeadId.id,

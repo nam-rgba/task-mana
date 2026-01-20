@@ -6,6 +6,8 @@ class TeamController {
 	constructor() {}
 
 	create = async (req: Request, res: Response, next: NextFunction) => {
+		const userId = req.headers['x-user-id'] as unknown as number
+		req.body.leadId = userId
 		new CreatedResponse('Create team successfully!', 201, await teamService.createTeam(req.body)).send(res)
 	}
 

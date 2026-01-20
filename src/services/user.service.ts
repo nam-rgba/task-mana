@@ -15,6 +15,10 @@ export const getUserByEmail = async (email: string) => {
 	return await findOne({ email }, 'AUTH')
 }
 
+export const checkRegistedEmail = async (email: string): Promise<boolean> => {
+	return await userRepo.checkRegistedEmail(email)
+}
+
 export const getUserById = async (id: number) => {
 	return await findOne({ id })
 }

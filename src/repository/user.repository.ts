@@ -128,10 +128,16 @@ export const getUserRepository = () => {
 		return updatedUser
 	}
 
+	const checkRegistedEmail = async (email: string): Promise<boolean> => {
+		const existingUser = await repo.findOneBy({ email })
+		return !!existingUser
+	}
+
 	return {
 		findAll,
 		findOne,
 		create,
-		update
+		update,
+		checkRegistedEmail
 	}
 }
