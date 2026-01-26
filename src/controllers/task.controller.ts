@@ -25,7 +25,7 @@ class TaskController {
 		new SuccessResponse({
 			message: 'Get tasks successfully!',
 			statusCode: 200,
-			metadata: await taskService.getTasks(req.query)
+			metadata: await taskService.getTasks(req.query as any)
 		}).send(res)
 	}
 
@@ -44,6 +44,26 @@ class TaskController {
 			message: 'AI generated task successfully!',
 			statusCode: 200,
 			metadata: await aiGenService.generateTask(req.body)
+		}).send(res)
+	}
+
+	// Gửi request QC
+	submitForQC = async (req: Request, res: Response, next: NextFunction) => {
+		const id = Number(req.params.id)
+		new SuccessResponse({
+			message: 'Task submitted for QC review successfully!',
+			statusCode: 200,
+			metadata: await taskService.submitForQC(id)
+		}).send(res)
+	}
+
+	// QC đánh giá task
+	submitQCReview = async (req: Request, res: Response, next: NextFunction) => {
+		const id = Number(req.params.id)
+		new SuccessResponse({
+			message: 'QC review submitted successfully!',
+			statusCode: 200,
+			metadata: await taskService.submitQCReview(id, req.body)
 		}).send(res)
 	}
 }

@@ -25,6 +25,11 @@ export enum TaskType {
 	Other = 'OTHER'
 }
 
+export enum QCReviewStatus {
+	Pass = 'PASS',
+	Fail = 'FAIL'
+}
+
 export interface Task {
 	id: number
 	title: string

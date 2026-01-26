@@ -7,7 +7,7 @@ import {
 	ManyToOne,
 	JoinColumn
 } from 'typeorm'
-import { TaskPriority, TaskStatus, TaskType } from '~/types/task.type.js'
+import { TaskPriority, TaskStatus, TaskType, QCReviewStatus } from '~/types/task.type.js'
 import { User } from './user.entity.js'
 import { Project } from './project.entity.js'
 
@@ -69,6 +69,15 @@ export class Task {
 
 	@Column({ type: 'int', nullable: true })
 	completedAt?: number
+
+	@Column({ type: 'float', nullable: true })
+	score?: number
+
+	@Column({ type: 'enum', enum: QCReviewStatus, nullable: true })
+	qcReviewStatus?: QCReviewStatus
+
+	@Column({ type: 'text', nullable: true })
+	qcNote?: string
 
 	@Column('text', { array: true, nullable: true })
 	fileUrls: string[]
