@@ -101,6 +101,8 @@ export const getUserRepository = () => {
 				email: true,
 				name: true,
 				avatar: true,
+				position: true,
+				yearOfExperience: true,
 				password: type === 'AUTH' ? true : false
 			}
 		})

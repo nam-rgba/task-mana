@@ -43,7 +43,7 @@ export class TaskService {
 	async submitQCReview(
 		id: number,
 		data: {
-			qcReviewStatus: QCReviewStatus
+			passed: boolean
 			score: number
 			actualEffort: number
 		}
@@ -56,11 +56,11 @@ export class TaskService {
 			throw new Error('Task must be in WAIT_REVIEW status to submit QC review')
 		}
 
-		const newStatus = data.qcReviewStatus === QCReviewStatus.Pass ? TaskStatus.Done : TaskStatus.Processing
-		const completedAt = data.qcReviewStatus === QCReviewStatus.Pass ? Math.floor(Date.now() / 1000) : task.completedAt
+		const newStatus = data.passed ? TaskStatus.Done : TaskStatus.Processing
+		const completedAt = data.passed ? Math.floor(Date.now() / 1000) : task.completedAt
 
 		return this.repo.update(id, {
-			qcReviewStatus: data.qcReviewStatus,
+			qcReviewStatus: data.passed ? QCReviewStatus.Pass : QCReviewStatus.Fail,
 			score: data.score,
 			actualEffort: data.actualEffort,
 			status: newStatus,

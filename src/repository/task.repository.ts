@@ -191,8 +191,8 @@ export const getTaskRepository = () => {
 
 		let queryString = `
 			SELECT t.*, 
-				json_build_object('id', u1.id, 'name', u1.name, 'email', u1.email) as assignee,
-				json_build_object('id', u2.id, 'name', u2.name, 'email', u2.email) as reviewer,
+				json_build_object('id', u1.id, 'name', u1.name, 'email', u1.email, 'avatar', u1.avatar) as assignee,
+				json_build_object('id', u2.id, 'name', u2.name, 'email', u2.email, 'avatar', u2.avatar) as reviewer,
 				json_build_object('id', p.id, 'name', p.name) as project
 			FROM tasks t
 			INNER JOIN projects p ON t."projectId" = p.id
