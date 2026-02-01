@@ -90,15 +90,23 @@ export const getTaskRepository = () => {
 
 		const filter = buildFilter(query)
 
-		const [tasks, total] = await repo.findAndCount({
-			where: filter.where,
-			skip: _skip,
-			take: _limit,
-			order: {
-				createdAt: 'DESC'
-			},
-			relations: ['assignee', 'reviewer', 'project']
-		})
+		// Sử dụng QueryBuilder để chỉ select những fields cần thiết, tránh lộ thông tin nhạy cảm
+		const qb = repo
+			.createQueryBuilder('task')
+			.leftJoinAndSelect('task.project', 'project')
+			.leftJoin('task.assignee', 'assignee')
+			.addSelect(['assignee.id', 'assignee.name', 'assignee.email', 'assignee.avatar', 'assignee.position'])
+			.leftJoin('task.reviewer', 'reviewer')
+			.addSelect(['reviewer.id', 'reviewer.name', 'reviewer.email', 'reviewer.avatar'])
+			.skip(_skip)
+			.take(_limit)
+			.orderBy('task.createdAt', 'DESC')
+
+		if (filter.where) {
+			qb.where(filter.where)
+		}
+
+		const [tasks, total] = await qb.getManyAndCount()
 
 		const currentPage = Math.floor(_skip / _limit) + 1
 		const pages = Math.max(1, Math.ceil(total / _limit))
@@ -151,8 +159,10 @@ export const getTaskRepository = () => {
 			.innerJoin('task.project', 'project')
 			.innerJoin('project.team', 'team')
 			.innerJoin('team.members', 'teamMember')
-			.leftJoinAndSelect('task.assignee', 'assignee')
-			.leftJoinAndSelect('task.reviewer', 'reviewer')
+			.leftJoin('task.assignee', 'assignee')
+			.addSelect(['assignee.id', 'assignee.name', 'assignee.email', 'assignee.avatar'])
+			.leftJoin('task.reviewer', 'reviewer')
+			.addSelect(['reviewer.id', 'reviewer.name', 'reviewer.email', 'reviewer.avatar'])
 			.leftJoinAndSelect('task.project', 'projectData')
 			.where('teamMember.userId = :userId', { userId })
 			.andWhere('teamMember.isActive = :isActive', { isActive: true })
