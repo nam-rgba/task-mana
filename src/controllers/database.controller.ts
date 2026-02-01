@@ -15,12 +15,17 @@ class DatabaseController {
 
 	importAllData = async (req: Request, res: Response) => {
 		// Xử lý cả 2 trường hợp:
-		// 1. { data: {...} } - gửi trực tiếp
-		// 2. { success, message, data: {...}, stats } - từ export response
-		const importData = req.body.data || req.body
+		// 1. { data: { users: [], teams: [], ... } } - từ script
+		// 2. { users: [], teams: [], ... } - gửi trực tiếp
+		const finalData = req.body.data || req.body
 
-		// Nếu body có cấu trúc từ export, lấy data bên trong
-		const finalData = importData.users ? importData : importData.data
+		// Log để debug
+		console.log('Import request body keys:', Object.keys(req.body))
+		console.log('finalData keys:', finalData ? Object.keys(finalData) : 'null')
+
+		if (!finalData || !finalData.users) {
+			throw new Error('Invalid data format. Expected: { data: { users: [], teams: [], ... } }')
+		}
 
 		const result = await DatabaseService.importAllData(finalData)
 		new OKResponse('Import all data successfully!', 200, result).send(res)

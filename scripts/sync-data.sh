@@ -31,9 +31,13 @@ echo -e "${GREEN}   Đã lưu vào /tmp/db_export.json${NC}\n"
 
 # 2. Import data lên server
 echo -e "${YELLOW}📥 Step 2: Import data lên server...${NC}"
+
+# Extract phần data từ response (bỏ qua metadata wrapper)
+IMPORT_PAYLOAD=$(echo "$EXPORT_DATA" | jq -c '.metadata.data' 2>/dev/null || echo "$EXPORT_DATA")
+
 IMPORT_RESULT=$(curl -s -X POST "${SERVER_URL}/api/database/import" \
     -H "Content-Type: application/json" \
-    -d "$EXPORT_DATA")
+    -d "{\"data\": $IMPORT_PAYLOAD}")
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Lỗi khi import data lên server${NC}"
