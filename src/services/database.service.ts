@@ -10,10 +10,6 @@ export class DatabaseService {
 			const tasksResult = await AppDataSource.query('DELETE FROM tasks')
 			results.tasks = tasksResult[1] || 0
 
-			// 2. Clear tokens
-			const tokensResult = await AppDataSource.query('DELETE FROM tokens')
-			results.tokens = tokensResult[1] || 0
-
 			// 3. Clear team_members
 			const teamMembersResult = await AppDataSource.query('DELETE FROM team_members')
 			results.teamMembers = teamMembersResult[1] || 0
@@ -32,7 +28,6 @@ export class DatabaseService {
 
 			// Reset sequences
 			await AppDataSource.query('ALTER SEQUENCE tasks_id_seq RESTART WITH 1')
-			await AppDataSource.query('ALTER SEQUENCE tokens_id_seq RESTART WITH 1')
 			await AppDataSource.query('ALTER SEQUENCE team_members_id_seq RESTART WITH 1')
 			await AppDataSource.query('ALTER SEQUENCE projects_id_seq RESTART WITH 1')
 			await AppDataSource.query('ALTER SEQUENCE teams_id_seq RESTART WITH 1')
