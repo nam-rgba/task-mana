@@ -6,11 +6,15 @@ import { taskRouter } from './task.route.js'
 import { teamRouter } from './team.route.js'
 import { projectRouter } from './project.route.js'
 import { aiRouter } from './aidata.route.js'
+import { databaseRouter } from './database.route.js'
 
 const router = express.Router()
 
 // specific routes for data AI
 router.use('/aidata', aiRouter)
+
+// database management routes
+router.use('/database', databaseRouter)
 
 // auth routes
 router.use('/auth', authRouter)
