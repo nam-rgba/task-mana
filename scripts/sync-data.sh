@@ -32,12 +32,16 @@ echo -e "${GREEN}   Đã lưu vào /tmp/db_export.json${NC}\n"
 # 2. Import data lên server
 echo -e "${YELLOW}📥 Step 2: Import data lên server...${NC}"
 
-# Extract phần data từ response (bỏ qua metadata wrapper)
-IMPORT_PAYLOAD=$(echo "$EXPORT_DATA" | jq -c '.metadata.data' 2>/dev/null || echo "$EXPORT_DATA")
+# Extract phần data từ response using node (không cần jq)
+IMPORT_PAYLOAD=$(node -e "
+const fs = require('fs');
+const data = JSON.parse(fs.readFileSync('/tmp/db_export.json', 'utf8'));
+console.log(JSON.stringify({ data: data.metadata.data }));
+")
 
 IMPORT_RESULT=$(curl -s -X POST "${SERVER_URL}/api/database/import" \
     -H "Content-Type: application/json" \
-    -d "{\"data\": $IMPORT_PAYLOAD}")
+    -d "$IMPORT_PAYLOAD")
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Lỗi khi import data lên server${NC}"
