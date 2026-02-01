@@ -14,8 +14,15 @@ class DatabaseController {
 	}
 
 	importAllData = async (req: Request, res: Response) => {
-		const { data } = req.body
-		const result = await DatabaseService.importAllData(data)
+		// Xử lý cả 2 trường hợp:
+		// 1. { data: {...} } - gửi trực tiếp
+		// 2. { success, message, data: {...}, stats } - từ export response
+		const importData = req.body.data || req.body
+
+		// Nếu body có cấu trúc từ export, lấy data bên trong
+		const finalData = importData.users ? importData : importData.data
+
+		const result = await DatabaseService.importAllData(finalData)
 		new OKResponse('Import all data successfully!', 200, result).send(res)
 	}
 }
