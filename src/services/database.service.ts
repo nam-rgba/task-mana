@@ -162,24 +162,24 @@ export class DatabaseService {
 			if (data.teamMembers && data.teamMembers.length > 0) {
 				for (const member of data.teamMembers) {
 					await AppDataSource.query(
-						`INSERT INTO team_members (id, "userId", "teamId", role, "isActive", "joinedAt", "createdAt", "updatedAt") 
+						`INSERT INTO team_members (id, "userId", "teamId", role, "isActive", "createdAt", "updatedAt", "deletedAt") 
 						VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 						ON CONFLICT (id) DO UPDATE SET
 							"userId" = EXCLUDED."userId",
 							"teamId" = EXCLUDED."teamId",
 							role = EXCLUDED.role,
 							"isActive" = EXCLUDED."isActive",
-							"joinedAt" = EXCLUDED."joinedAt",
-							"updatedAt" = EXCLUDED."updatedAt"`,
+							"updatedAt" = EXCLUDED."updatedAt",
+							"deletedAt" = EXCLUDED."deletedAt"`,
 						[
 							member.id,
 							member.userId,
 							member.teamId,
 							member.role,
 							member.isActive,
-							member.joinedAt,
 							member.createdAt,
-							member.updatedAt
+							member.updatedAt,
+							member.deletedAt
 						]
 					)
 				}
