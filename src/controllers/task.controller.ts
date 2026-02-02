@@ -47,6 +47,14 @@ class TaskController {
 		}).send(res)
 	}
 
+	suggestDev = async (req: Request, res: Response, next: NextFunction) => {
+		new SuccessResponse({
+			message: 'AI suggested developer successfully!',
+			statusCode: 200,
+			metadata: await aiGenService.suggestDeveloper(req.body)
+		}).send(res)
+	}
+
 	// Gửi request QC
 	submitForQC = async (req: Request, res: Response, next: NextFunction) => {
 		const id = Number(req.params.id)

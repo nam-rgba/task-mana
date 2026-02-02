@@ -15,8 +15,34 @@ class AiGenService {
 			}
 		)
 
-		console.log('AI Service Response:', res.data)
+		return res.data
+	}
 
+	async suggestDeveloper(body: any) {
+		const res = await axios.post(
+			`${this.aiServiceUrl}/llm/assign`,
+			{ ...body },
+			{
+				timeout: 60_000,
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			}
+		)
+		return res.data
+	}
+
+	async estimateEffort(body: any) {
+		const res = await axios.post(
+			`${this.aiServiceUrl}/llm/estimate_sp`,
+			{ ...body },
+			{
+				timeout: 60_000,
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			}
+		)
 		return res.data
 	}
 }
