@@ -7,5 +7,6 @@ const aiRouter = express.Router()
 aiRouter.get('/tasks', AsyncHandler(AiDataController.getAllTask))
 aiRouter.get('/members', AsyncHandler(AiDataController.getAllMembers))
 aiRouter.get('/projects', AsyncHandler(AiDataController.getAllProject))
+aiRouter.get('/users', AsyncHandler(AiDataController.getAllUsers))
 
 export { aiRouter }

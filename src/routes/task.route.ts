@@ -12,5 +12,7 @@ router.delete('/:id', AsyncHandler(ctrl.dlt))
 router.post('/ai-gen', AsyncHandler(ctrl.genAiTask))
 router.post('/:id/submit-qc', AsyncHandler(ctrl.submitForQC))
 router.post('/:id/qc-review', AsyncHandler(ctrl.submitQCReview))
+router.get('/suggest-today', AsyncHandler(ctrl.suggestTaskToday))
+router.get('/suggest-developer', AsyncHandler(ctrl.suggestDev))
 
 export { router as taskRouter }

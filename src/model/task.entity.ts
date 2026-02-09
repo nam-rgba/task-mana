@@ -58,9 +58,6 @@ export class Task {
 	@JoinColumn({ name: 'projectId' })
 	project?: Project
 
-	@Column({ type: 'uuid', nullable: true })
-	parentTaskId?: string
-
 	@Column({ type: 'enum', enum: TaskPriority, nullable: true })
 	priority?: string
 
@@ -87,4 +84,14 @@ export class Task {
 
 	@UpdateDateColumn({ name: 'updated_at' })
 	updatedAt!: Date
+
+	@Column({ type: 'jsonb', nullable: true, default: [] })
+	todos?: TodoItem[]
+}
+
+export interface TodoItem {
+	id: string // UUID v4 generate từ client hoặc crypto.randomUUID()
+	title: string
+	order: number
+	completed: boolean
 }

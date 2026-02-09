@@ -24,6 +24,12 @@ class AiDataController {
 			await aiDataService.getAllTeamMember({ ...req.query })
 		).send(res)
 	}
+
+	static async getAllUsers(req: Request, res: Response) {
+		return new OKResponse('Get all users successfully!', 200, await aiDataService.getAllUser({ ...req.query })).send(
+			res
+		)
+	}
 }
 
 export default AiDataController

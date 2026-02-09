@@ -74,6 +74,15 @@ class TaskController {
 			metadata: await taskService.submitQCReview(id, req.body)
 		}).send(res)
 	}
+
+	// Gợi ý task cho hôm nay
+	suggestTaskToday = async (req: Request, res: Response, next: NextFunction) => {
+		new SuccessResponse({
+			message: 'AI suggested tasks for today successfully!',
+			statusCode: 200,
+			metadata: await aiGenService.suggestTaskToday(req.query)
+		}).send(res)
+	}
 }
 
 const taskController = new TaskController()
