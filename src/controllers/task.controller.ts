@@ -83,6 +83,15 @@ class TaskController {
 			metadata: await aiGenService.suggestTaskToday(req.query)
 		}).send(res)
 	}
+
+	// gợi ý story point cho task
+	estimateSP = async (req: Request, res: Response, next: NextFunction) => {
+		new SuccessResponse({
+			message: 'AI estimated story point successfully!',
+			statusCode: 200,
+			metadata: await aiGenService.estimateEffort(req.body)
+		}).send(res)
+	}
 }
 
 const taskController = new TaskController()
