@@ -15,6 +15,10 @@ class ProjectService {
 		})
 	}
 
+	async getProjectAndId() {
+		return await this.repo.getAllNameAndId()
+	}
+
 	async createProject(projectData: Partial<Project>) {
 		const { teamId, ...rest } = projectData
 		// check xem team có tồn tại không

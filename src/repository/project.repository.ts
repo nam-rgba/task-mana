@@ -8,6 +8,13 @@ export const getProjectRepository = () => {
 		return await repo.findOneBy({ id })
 	}
 
+	const getAllNameAndId = async (): Promise<{ id: number; name: string }[]> => {
+		const projects = await repo.find({
+			select: ['id', 'name']
+		})
+		return projects.map((project) => ({ id: project.id, name: project.name }))
+	}
+
 	const findAll = async ({
 		page,
 		limit,
@@ -48,6 +55,7 @@ export const getProjectRepository = () => {
 		findAll,
 		create,
 		update,
-		deleteProject
+		deleteProject,
+		getAllNameAndId
 	}
 }

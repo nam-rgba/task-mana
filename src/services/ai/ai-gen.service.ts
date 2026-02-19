@@ -98,6 +98,10 @@ class AiGenService {
 	async suggestTaskToday(body: any) {
 		return this.makeRequest('/llm/suggest_tasks_for_today', body)
 	}
+
+	async generateCompleteTask(body: any) {
+		return this.makeRequest('/llm/generate_task', body)
+	}
 }
 
 export const aiGenService = new AiGenService()
