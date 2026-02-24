@@ -46,4 +46,7 @@ export class Team extends AppBaseEntity {
 
 	@OneToMany(() => Project, (project) => project.team)
 	projects: Awaited<Project[]>
+
+	@Column({ type: 'varchar', nullable: true, length: 20 })
+	discordServerId: string
 }

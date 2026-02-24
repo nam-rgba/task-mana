@@ -140,6 +140,15 @@ class TeamService {
 		const teams = await this.teamRepository.findAll({ userId })
 		return teams
 	}
+
+	async updateDiscordServerId({ teamId, discordId }: { teamId: number; discordId: string }) {
+		const team = await this.teamRepository.findOneById(teamId)
+		if (!team) throw new BadRequestError('Cannot find your team!!!')
+
+		team.discordServerId = discordId
+
+		return this.teamRepository.save(team)
+	}
 }
 
 const teamService = new TeamService()

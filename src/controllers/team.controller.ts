@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { teamService } from '~/services/team.service.js'
-import { CreatedResponse } from '~/utils/success.response.js'
+import { CreatedResponse, OKResponse } from '~/utils/success.response.js'
 
 class TeamController {
 	constructor() {}
@@ -34,6 +34,13 @@ class TeamController {
 		const userId = req.headers['x-user-id'] as unknown as number
 		const teams = await teamService.findAllTeamOfUser(userId)
 		new CreatedResponse('Get all teams of user successfully!', 200, { teams }).send(res)
+	}
+
+	updateDiscordServerId = async (req: Request, res: Response, next: NextFunction) => {
+		const teamId = +req.params.id
+		const { discordServerId } = req.body
+		const team = await teamService.updateDiscordServerId({ teamId, discordId: discordServerId })
+		new OKResponse('Update Discord Server ID successfully!', 200, team)
 	}
 }
 

@@ -30,4 +30,7 @@ export class TeamMember extends AppBaseEntity {
 
 	@Column({ type: 'boolean', default: true })
 	isActive: boolean
+
+	@Column({ type: 'varchar', nullable: true, length: 20 })
+	discordUserId: string
 }

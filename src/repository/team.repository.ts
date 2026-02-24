@@ -52,12 +52,17 @@ export const getTeamRepository = () => {
 		return team
 	}
 
+	const save = async (team: Team) => {
+		return repo.save(team)
+	}
+
 	return {
 		findOneById,
 		findOneByKey,
 		findAll,
 		create,
 		update,
-		findDetailTeam
+		findDetailTeam,
+		save
 	}
 }

@@ -34,6 +34,9 @@ export class User {
 	@OneToMany(() => Project, (p) => p.lead)
 	leadingProjects: Awaited<Project[]>
 
+	@Column({ type: 'varchar', nullable: true, length: 20 })
+	discordUserId: string
+
 	@CreateDateColumn()
 	createdAt!: Date
 
