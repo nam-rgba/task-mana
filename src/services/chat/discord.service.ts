@@ -1,7 +1,8 @@
 import { Client, GatewayIntentBits, TextChannel } from 'discord.js'
 import { projectService } from '../project.service.js'
 import { aiGenService } from '../ai/ai-gen.service.js'
-import { Task } from '~/model/task.entity.js'
+import { taskService } from '../task.service.js'
+import dayjs from 'dayjs'
 
 const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN
@@ -96,15 +97,24 @@ class DiscordService {
 					}
 
 					try {
-						const newTask = (await aiGenService.generateCompleteTask({
+						const { composed_task } = await aiGenService.generateCompleteTask({
 							project_id: parseInt(projectId),
 							user_input: taskName
-						})) as Task
-						console.log('Generated task from AI:', newTask)
-						message.reply(`Task "${newTask.title}" created successfully in project ID ${projectId}!`)
+						})
+						console.log('Generated task from AI:', composed_task)
+						// tạo task mới trong dự án
+						await taskService.createTask({
+							title: composed_task.title,
+							description: composed_task.description,
+							projectId: parseInt(projectId),
+							priority: composed_task.priority,
+							type: composed_task.type,
+							dueDate: dayjs(composed_task.due_date).unix()
+						})
+						message.reply(`Task "${composed_task.title}" created successfully in project ID ${projectId}!`)
 					} catch (error) {
 						console.error('Error creating task:', error)
-						message.reply('Failed to create task. Please check the project ID and try again.')
+						message.reply('Failed to create task. Please check the connection and try again.')
 					}
 				} else if (command === 'help') {
 					message.reply(
