@@ -18,7 +18,7 @@ router.use('/database', databaseRouter)
 
 // middleware for logging chat interactions to Discord
 import { chatLogger } from '~/middleware/chat.js'
-// router.use(chatLogger)
+router.use(chatLogger)
 
 // auth routes
 router.use('/auth', authRouter)

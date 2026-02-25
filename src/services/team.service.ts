@@ -149,6 +149,17 @@ class TeamService {
 
 		return this.teamRepository.save(team)
 	}
+
+	async linkDiscordServer(discordServerId: string) {
+		const team = await this.teamRepository.findByDiscordServerId(discordServerId)
+		if (!team) {
+			return null
+		}
+
+		// Cập nhật trạng thái linked
+		team.isDiscordServerLinked = true
+		return this.teamRepository.save(team)
+	}
 }
 
 const teamService = new TeamService()

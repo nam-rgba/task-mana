@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, TextChannel, REST, Routes, SlashCommandBuild
 import { projectService } from '../project.service.js'
 import { aiGenService } from '../ai/ai-gen.service.js'
 import { taskService } from '../task.service.js'
+import { teamService } from '../team.service.js'
 import dayjs from 'dayjs'
 
 const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID
@@ -28,6 +29,7 @@ class DiscordService {
 			console.log(`Logged in as ${this.client.user?.tag}!`)
 			this.registerSlashCommands()
 			this.listenForInteractions()
+			this.listenForGuildEvents()
 		})
 
 		this.client.login(BOT_TOKEN)
@@ -37,17 +39,17 @@ class DiscordService {
 	async registerSlashCommands() {
 		const commands = [
 			// Lệnh ping - Kiểm tra bot có hoạt động không
-			new SlashCommandBuilder().setName('ping').setDescription('🏓 Kiểm tra xem bot có đang hoạt động không'),
+			new SlashCommandBuilder().setName('ping').setDescription(' Kiểm tra xem bot có đang hoạt động không'),
 
 			// Lệnh projects - Xem danh sách tất cả dự án
 			new SlashCommandBuilder()
 				.setName('projects')
-				.setDescription('📋 Hiển thị danh sách tất cả các dự án với ID của chúng'),
+				.setDescription('Hiển thị danh sách tất cả các dự án với ID của chúng'),
 
 			// Lệnh create-task - Tạo task mới với AI
 			new SlashCommandBuilder()
 				.setName('create-task')
-				.setDescription('✨ Tạo task mới trong dự án (AI sẽ tự động hoàn thiện thông tin)')
+				.setDescription('Tạo task mới trong dự án (AI sẽ tự động hoàn thiện thông tin)')
 				.addIntegerOption((option) =>
 					option.setName('project_id').setDescription('ID của dự án cần tạo task').setRequired(true)
 				)
@@ -56,12 +58,12 @@ class DiscordService {
 				),
 
 			// Lệnh help - Hướng dẫn sử dụng
-			new SlashCommandBuilder().setName('help').setDescription('❓ Xem hướng dẫn sử dụng các lệnh của bot'),
+			new SlashCommandBuilder().setName('help').setDescription('Xem hướng dẫn sử dụng các lệnh của bot'),
 
 			// Lệnh server-info - Xem thông tin server hiện tại
 			new SlashCommandBuilder()
 				.setName('server-info')
-				.setDescription('🖥️ Hiển thị thông tin chi tiết về server Discord hiện tại')
+				.setDescription('Hiển thị thông tin chi tiết về server Discord hiện tại')
 		].map((command) => command.toJSON())
 
 		const rest = new REST({ version: '10' }).setToken(BOT_TOKEN!)
@@ -73,7 +75,7 @@ class DiscordService {
 				body: commands
 			})
 
-			console.log('✅ Successfully registered slash commands!')
+			console.log(' Successfully registered slash commands!')
 		} catch (error) {
 			console.error('Error registering slash commands:', error)
 		}
@@ -82,7 +84,7 @@ class DiscordService {
 	sendFormatCode(logData: any) {
 		const { method, start, code, host, content } = logData
 		const formatted = {
-			content: `📝 ${method} request from: ${host}\n🕒 ${new Date(start).toLocaleString()}\n`,
+			content: ` ${method} request from: ${host}\n ${new Date(start).toLocaleString()}\n`,
 			embeds: [
 				{
 					color: parseInt(code.toString()[0] == '2' ? '00ff00' : 'ff0000', 16), // Xanh lá (200~299), bạn có thể thay theo status code
@@ -125,7 +127,7 @@ class DiscordService {
 				// ---------------------------------------------------
 				if (commandName === 'ping') {
 					await interaction.reply({
-						content: '🏓 Pong! Bot đang hoạt động bình thường.',
+						content: ' Pong! Bot đang hoạt động bình thường.',
 						ephemeral: false
 					})
 				}
@@ -140,14 +142,14 @@ class DiscordService {
 					const projects = await projectService.getProjectAndId()
 
 					if (projects.length === 0) {
-						await interaction.editReply('📋 Chưa có dự án nào trong hệ thống.')
+						await interaction.editReply('Chưa có dự án nào trong hệ thống.')
 						return
 					}
 
 					const projectList = projects.map((p, index) => `${index + 1}. **${p.name}** (ID: \`${p.id}\`)`).join('\n')
 
 					await interaction.editReply({
-						content: `📋 **Danh sách dự án hiện tại:**\n\n${projectList}`
+						content: ` **Danh sách dự án hiện tại:**\n\n${projectList}`
 					})
 				}
 
@@ -192,19 +194,19 @@ class DiscordService {
 						// Trả về thông báo thành công với chi tiết
 						await interaction.editReply({
 							content:
-								`✅ **Task đã được tạo thành công!**\n\n` +
-								`📌 **Title:** ${composed_task.title}\n` +
-								`📝 **Description:** ${composed_task.description}\n` +
-								`🎯 **Priority:** ${composed_task.priority}\n` +
-								`🔧 **Type:** ${composed_task.type}\n` +
-								`📅 **Due Date:** ${dayjs(composed_task.due_date).format('DD/MM/YYYY')}\n` +
-								`🗂️ **Project ID:** ${projectId}`
+								` **Task đã được tạo thành công!**\n\n` +
+								` **Title:** ${composed_task.title}\n` +
+								` **Description:** ${composed_task.description}\n` +
+								` **Priority:** ${composed_task.priority}\n` +
+								` **Type:** ${composed_task.type}\n` +
+								` **Due Date:** ${dayjs(composed_task.due_date).format('DD/MM/YYYY')}\n` +
+								` **Project ID:** ${projectId}`
 						})
 					} catch (error) {
 						console.error('Error creating task:', error)
 						await interaction.editReply({
 							content:
-								'❌ **Lỗi:** Không thể tạo task. Vui lòng kiểm tra:\n' +
+								'**Lỗi:** Không thể tạo task. Vui lòng kiểm tra:\n' +
 								`• Project ID \`${projectId}\` có tồn tại không?\n` +
 								'• Kết nối AI service có hoạt động không?\n' +
 								'• Database có sẵn sàng không?'
@@ -229,7 +231,7 @@ class DiscordService {
 
 					if (!guild) {
 						await interaction.reply({
-							content: '❌ Lệnh này chỉ có thể sử dụng trong server, không dùng được trong DM.',
+							content: ' Lệnh này chỉ có thể sử dụng trong server, không dùng được trong DM.',
 							ephemeral: true
 						})
 						return
@@ -246,14 +248,14 @@ class DiscordService {
 
 					await interaction.reply({
 						content:
-							`🖥️ **Thông tin Server**\n\n` +
-							`📌 **Tên Server:** ${guild.name}\n` +
-							`🆔 **Server ID:** \`${guild.id}\`\n` +
-							`👑 **Owner:** ${owner.user.tag} (\`${owner.id}\`)\n` +
-							`👥 **Số thành viên:** ${guild.memberCount}\n` +
-							`📅 **Ngày tạo:** ${createdDate}\n` +
-							`💬 **Kênh hiện tại:** <#${interaction.channelId}>\n\n` +
-							`👤 **Người dùng lệnh:** ${user.tag} (\`${user.id}\`)`,
+							` **Thông tin Server**\n\n` +
+							` **Tên Server:** ${guild.name}\n` +
+							` **Server ID:** \`${guild.id}\`\n` +
+							` **Owner:** ${owner.user.tag} (\`${owner.id}\`)\n` +
+							` **Số thành viên:** ${guild.memberCount}\n` +
+							` **Ngày tạo:** ${createdDate}\n` +
+							`**Kênh hiện tại:** <#${interaction.channelId}>\n\n` +
+							`**Người dùng lệnh:** ${user.tag} (\`${user.id}\`)`,
 						ephemeral: false
 					})
 				}
@@ -265,13 +267,13 @@ class DiscordService {
 				else if (commandName === 'help') {
 					await interaction.reply({
 						content:
-							'📖 **Hướng dẫn sử dụng bot quản lý dự án**\n\n' +
+							' **Hướng dẫn sử dụng bot quản lý dự án**\n\n' +
 							'**Các lệnh có sẵn:**\n\n' +
-							'🏓 `/ping`\n' +
+							' `/ping`\n' +
 							'   → Kiểm tra xem bot có đang hoạt động không\n\n' +
-							'📋 `/projects`\n' +
+							' `/projects`\n' +
 							'   → Xem danh sách tất cả các dự án và ID của chúng\n\n' +
-							'✨ `/create-task`\n' +
+							' `/create-task`\n' +
 							'   → Tạo task mới với sự hỗ trợ của AI\n' +
 							'   → **Tham số:**\n' +
 							'      • `project_id`: ID của dự án (số nguyên)\n' +
@@ -282,25 +284,85 @@ class DiscordService {
 							'      • Gợi ý priority (LOW/MEDIUM/HIGH)\n' +
 							'      • Gợi ý type (FEATURE/BUG/IMPROVEMENT)\n' +
 							'      • Đề xuất deadline hợp lý\n\n' +
-							'🖥️ `/server-info`\n' +
+							' `/server-info`\n' +
 							'   → Xem thông tin chi tiết về server Discord này\n\n' +
-							'❓ `/help`\n' +
+							'`/help`\n' +
 							'   → Hiển thị hướng dẫn này\n\n' +
-							'💡 **Tip:** Bạn có thể gõ `/` và chọn lệnh từ menu gợi ý!',
+							'**Tip:** Bạn có thể gõ `/` và chọn lệnh từ menu gợi ý!',
 						ephemeral: true // Chỉ người dùng gõ lệnh mới thấy
 					})
 				}
 			} catch (error) {
 				console.error('Error handling interaction:', error)
 				if (interaction.deferred) {
-					await interaction.editReply('❌ Có lỗi xảy ra khi xử lý lệnh.')
+					await interaction.editReply('Có lỗi xảy ra khi xử lý lệnh.')
 				} else {
 					await interaction.reply({
-						content: '❌ Có lỗi xảy ra khi xử lý lệnh.',
+						content: 'Có lỗi xảy ra khi xử lý lệnh.',
 						ephemeral: true
 					})
 				}
 			}
+		})
+	}
+
+	// Lắng nghe sự kiện guild (server)
+	async listenForGuildEvents() {
+		// ---------------------------------------------------
+		// Sự kiện: guildCreate
+		// Mục đích: Khi bot được thêm vào một guild/server mới
+		// Kiểm tra xem guild ID có khớp với discordServerId
+		// trong team nào không, nếu có thì cập nhật isDiscordServerLinked = true
+		// ---------------------------------------------------
+		this.client.on('guildCreate', async (guild) => {
+			console.log(` Bot đã được thêm vào guild: ${guild.name} (ID: ${guild.id})`)
+
+			try {
+				// Tìm team có discordServerId trùng với guild.id
+				const linkedTeam = await teamService.linkDiscordServer(guild.id)
+
+				if (linkedTeam) {
+					console.log(`Đã liên kết guild "${guild.name}" với team "${linkedTeam.name}" (ID: ${linkedTeam.id})`)
+
+					// Gửi thông báo vào server vừa được liên kết
+					const systemChannel = guild.systemChannel
+					if (systemChannel && systemChannel.isTextBased()) {
+						await systemChannel.send({
+							content:
+								`**Chào mừng!**\n\n` +
+								`Bot quản lý dự án đã được liên kết thành công với team **${linkedTeam.name}**!\n\n` +
+								`Bạn có thể sử dụng lệnh \`/help\` để xem danh sách các lệnh có sẵn.`
+						})
+					}
+				} else {
+					console.log(`ℹGuild "${guild.name}" (ID: ${guild.id}) chưa được đăng ký với team nào trong hệ thống.`)
+
+					// Gửi hướng dẫn nếu guild chưa được liên kết
+					const systemChannel = guild.systemChannel
+					if (systemChannel && systemChannel.isTextBased()) {
+						await systemChannel.send({
+							content:
+								` **Xin chào!**\n\n` +
+								`Cảm ơn bạn đã thêm bot vào server!\n` +
+								`Tuy nhiên, server này chưa được liên kết với team nào trong hệ thống.\n\n` +
+								`**Server ID của bạn:** \`${guild.id}\`\n\n` +
+								`Vui lòng sử dụng Server ID này để đăng ký team trên hệ thống quản lý.`
+						})
+					}
+				}
+			} catch (error) {
+				console.error(' Lỗi khi xử lý sự kiện guildCreate:', error)
+			}
+		})
+
+		// ---------------------------------------------------
+		// Sự kiện: guildDelete
+		// Mục đích: Khi bot bị xóa khỏi guild/server
+		// Có thể cập nhật isDiscordServerLinked = false nếu cần
+		// ---------------------------------------------------
+		this.client.on('guildDelete', async (guild) => {
+			console.log(`👋 Bot đã bị xóa khỏi guild: ${guild.name} (ID: ${guild.id})`)
+			// Có thể thêm logic cập nhật isDiscordServerLinked = false ở đây nếu cần
 		})
 	}
 }
