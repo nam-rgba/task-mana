@@ -11,4 +11,5 @@ router.get('/:id', AsyncHandler(teamController.getOneDetail))
 router.patch('/:id/member', AsyncHandler(teamController.addMember))
 router.patch('/:id/member/remove', AsyncHandler(teamController.removeMember))
 router.get('/', AsyncHandler(teamController.findAllTeamOfUser))
+router.patch('/:id/discord-id', AsyncHandler(teamController.updateDiscordServerId))
 export { router as teamRouter }

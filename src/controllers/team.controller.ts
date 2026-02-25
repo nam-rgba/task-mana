@@ -40,7 +40,7 @@ class TeamController {
 		const teamId = +req.params.id
 		const { discordServerId } = req.body
 		const team = await teamService.updateDiscordServerId({ teamId, discordId: discordServerId })
-		new OKResponse('Update Discord Server ID successfully!', 200, team)
+		new OKResponse('Update Discord Server ID successfully!', 209, team).send(res)
 	}
 }
 

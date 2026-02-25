@@ -49,4 +49,7 @@ export class Team extends AppBaseEntity {
 
 	@Column({ type: 'varchar', nullable: true, length: 20 })
 	discordServerId: string
+
+	@Column({ type: 'boolean', default: false })
+	isDiscordServerLinked: boolean
 }
