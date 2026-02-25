@@ -88,8 +88,17 @@ class TaskController {
 	estimateSP = async (req: Request, res: Response, next: NextFunction) => {
 		new SuccessResponse({
 			message: 'AI estimated story point successfully!',
-			statusCode: 200,
+			statusCode: 201,
 			metadata: await aiGenService.estimateEffort(req.body)
+		}).send(res)
+	}
+
+	//check task trùng lặp, na ná
+	checkDuplicateTask = async (req: Request, res: Response, next: NextFunction) => {
+		new SuccessResponse({
+			message: 'AI checked duplicate task successfully!',
+			statusCode: 200,
+			metadata: await aiGenService.checkDuplicateTask(req.body)
 		}).send(res)
 	}
 }

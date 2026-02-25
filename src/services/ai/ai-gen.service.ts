@@ -102,6 +102,10 @@ class AiGenService {
 	async generateCompleteTask(body: any) {
 		return this.makeRequest('/llm/generate_task', body)
 	}
+
+	async checkDuplicateTask(body: any) {
+		return this.makeRequest('/llm/duplicate', body)
+	}
 }
 
 export const aiGenService = new AiGenService()

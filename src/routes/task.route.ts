@@ -15,5 +15,6 @@ router.post('/:id/qc-review', AsyncHandler(ctrl.submitQCReview))
 router.get('/suggest-today', AsyncHandler(ctrl.suggestTaskToday))
 router.post('/suggest-developer', AsyncHandler(ctrl.suggestDev))
 router.post('/estimate-sp', AsyncHandler(ctrl.estimateSP))
+router.post('/check-duplicate', AsyncHandler(ctrl.checkDuplicateTask))
 
 export { router as taskRouter }
