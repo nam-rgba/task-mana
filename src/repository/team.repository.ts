@@ -60,6 +60,10 @@ export const getTeamRepository = () => {
 		return await repo.findOneBy({ discordServerId })
 	}
 
+	const findAllTeam = async (): Promise<Team[]> => {
+		return await repo.find()
+	}
+
 	return {
 		findOneById,
 		findOneByKey,
@@ -68,6 +72,7 @@ export const getTeamRepository = () => {
 		update,
 		findDetailTeam,
 		save,
-		findByDiscordServerId
+		findByDiscordServerId,
+		findAllTeam
 	}
 }

@@ -42,6 +42,11 @@ class TeamController {
 		const team = await teamService.updateDiscordServerId({ teamId, discordId: discordServerId })
 		new OKResponse('Update Discord Server ID successfully!', 209, team).send(res)
 	}
+
+	findAllTeam = async (req: Request, res: Response, next: NextFunction) => {
+		const teams = await teamService.findAllTeam()
+		new OKResponse('Get all teams successfully!', 200, { teams }).send(res)
+	}
 }
 
 const teamController = new TeamController()

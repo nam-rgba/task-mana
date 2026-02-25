@@ -160,6 +160,11 @@ class TeamService {
 		team.isDiscordServerLinked = true
 		return this.teamRepository.save(team)
 	}
+
+	async findAllTeam() {
+		const teams = await this.teamRepository.findAllTeam()
+		return teams
+	}
 }
 
 const teamService = new TeamService()

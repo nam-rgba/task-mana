@@ -7,6 +7,7 @@ import AsyncHandler from '~/utils/async-handler.js'
 const router = Router()
 
 router.post('/', validate(CreateTeamSchema), AsyncHandler(teamController.create))
+router.get('/all', AsyncHandler(teamController.findAllTeam))
 router.get('/:id', AsyncHandler(teamController.getOneDetail))
 router.patch('/:id/member', AsyncHandler(teamController.addMember))
 router.patch('/:id/member/remove', AsyncHandler(teamController.removeMember))
