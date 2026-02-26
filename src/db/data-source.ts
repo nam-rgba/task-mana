@@ -8,11 +8,12 @@ import { Task } from '~/model/task.entity.js'
 import { Team } from '~/model/team.entity.js'
 import { TeamMember } from '~/model/teamMember.entity.js'
 import { Project } from '~/model/project.entity.js'
+import { AiFeedback } from '~/model/ai-feedback.entity.js'
 
 export const AppDataSource = new DataSource({
 	type: 'postgres',
 	url: process.env.DATABASE_URL,
 	synchronize: true,
 	logging: false,
-	entities: [User, Token, Task, Team, TeamMember, Project]
+	entities: [User, Token, Task, Team, TeamMember, Project, AiFeedback]
 })

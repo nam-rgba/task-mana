@@ -7,6 +7,7 @@ import { teamRouter } from './team.route.js'
 import { projectRouter } from './project.route.js'
 import { aiRouter } from './aidata.route.js'
 import { databaseRouter } from './database.route.js'
+import { aiFeedbackRouter } from './ai-feedback.route.js'
 
 const router = express.Router()
 
@@ -15,6 +16,9 @@ router.use('/aidata', aiRouter)
 
 // database management routes
 router.use('/database', databaseRouter)
+
+// AI feedback & evaluation routes
+router.use('/ai-feedback', aiFeedbackRouter)
 
 // middleware for logging chat interactions to Discord
 import { chatLogger } from '~/middleware/chat.js'

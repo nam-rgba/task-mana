@@ -88,10 +88,14 @@ class AiGenService {
 	}
 
 	async suggestDeveloper(body: any) {
+		// TODO(ai-feedback): wrap result with trackSuggestion(AiActionType.ASSIGNEE_SUGGESTION)
+		// and return feedbackId alongside the suggestion so the FE can submit explicit feedback.
 		return this.makeRequest('/llm/assign', body)
 	}
 
 	async estimateEffort(body: any) {
+		// TODO(ai-feedback): wrap result with trackSuggestion(AiActionType.STORY_POINT_SUGGESTION)
+		// and return feedbackId alongside the suggestion so the FE can submit implicit feedback.
 		return this.makeRequest('/llm/estimate_sp', body)
 	}
 
