@@ -2,6 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { Position } from '~/types/position.type.js'
 import { TeamMember } from './teamMember.entity.js'
 import { Project } from './project.entity.js'
+import { Subscription } from './subscription.entity.js'
+import { Order } from './order.entity.js'
 
 @Entity('users')
 export class User {
@@ -36,6 +38,12 @@ export class User {
 
 	@Column({ type: 'varchar', nullable: true, length: 20 })
 	discordUserId: string
+
+	@OneToMany(() => Subscription, (sub) => sub.user)
+	subscriptions: Awaited<Subscription[]>
+
+	@OneToMany(() => Order, (order) => order.user)
+	orders: Awaited<Order[]>
 
 	@CreateDateColumn()
 	createdAt!: Date

@@ -8,8 +8,14 @@ import { projectRouter } from './project.route.js'
 import { aiRouter } from './aidata.route.js'
 import { databaseRouter } from './database.route.js'
 import { aiFeedbackRouter } from './ai-feedback.route.js'
+import { planRouter } from './plan.route.js'
+import { billingRouter } from './billing.route.js'
 
 const router = express.Router()
+
+// Plan & Billing routes (plan is public, billing has mixed auth)
+router.use('/plan', planRouter)
+router.use('/billing', billingRouter)
 
 // specific routes for data AI
 router.use('/aidata', aiRouter)
