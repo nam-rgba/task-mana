@@ -2,8 +2,8 @@ import { z } from 'zod'
 import { PlanName } from '../enums/billing.enum.js'
 
 export const CreatePlanSchema = z.object({
-	name: z.nativeEnum(PlanName, { required_error: 'Plan name is required' }),
-	displayName: z.string({ required_error: 'Display name is required' }).max(100),
+	name: z.nativeEnum(PlanName, { error: 'Plan name is required' }),
+	displayName: z.string({ error: 'Display name is required' }).max(100),
 	description: z.string().max(500).optional(),
 	monthlyPrice: z.number().int().nonnegative().default(0),
 	yearlyPrice: z.number().int().nonnegative().default(0),
