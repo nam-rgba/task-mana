@@ -6,6 +6,7 @@ import cors from 'cors'
 const app = express()
 
 import { router } from './routes/index.js'
+import { initSyncAICronJob } from './services/cron/sync-ai.cron.js'
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -20,6 +21,9 @@ app.use(cors())
 AppDataSource.initialize()
 	.then(() => {
 		console.log('✅ DB connected')
+
+		// Initialize cron jobs
+		initSyncAICronJob()
 
 		app.listen(3000, () => console.log('🚀 Running on http://localhost:3000'))
 	})
