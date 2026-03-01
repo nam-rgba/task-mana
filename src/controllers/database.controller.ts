@@ -23,8 +23,26 @@ class DatabaseController {
 		console.log('Import request body keys:', Object.keys(req.body))
 		console.log('finalData keys:', finalData ? Object.keys(finalData) : 'null')
 
-		if (!finalData || !finalData.users) {
-			throw new Error('Invalid data format. Expected: { data: { users: [], teams: [], ... } }')
+		// Kiểm tra có ít nhất 1 bảng data hợp lệ
+		const validTables = [
+			'users',
+			'plans',
+			'teams',
+			'teamMembers',
+			'projects',
+			'tasks',
+			'aiFeedbacks',
+			'orders',
+			'subscriptions',
+			'paymentHistories',
+			'tokens'
+		]
+		const hasValidData = validTables.some(
+			(table) => finalData && Array.isArray(finalData[table]) && finalData[table].length > 0
+		)
+
+		if (!hasValidData) {
+			throw new Error('Invalid data format. Expected at least one of: ' + validTables.join(', '))
 		}
 
 		const result = await DatabaseService.importAllData(finalData)

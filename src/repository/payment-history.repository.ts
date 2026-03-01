@@ -16,16 +16,35 @@ export const getPaymentHistoryRepository = () => {
 		})
 	}
 
-	const findByUserId = async (userId: number): Promise<PaymentHistory[]> => {
-		return await repo.find({
+	const findByUserId = async (
+		userId: number,
+		page?: number,
+		limit?: number
+	): Promise<{ data: PaymentHistory[]; total: number }> => {
+		const [data, total] = await repo.findAndCount({
 			where: { userId },
-			order: { createdAt: 'DESC' }
+			relations: ['order', 'order.plan'],
+			order: { createdAt: 'DESC' },
+			skip: page && limit ? (page - 1) * limit : undefined,
+			take: limit
 		})
+		return { data, total }
+	}
+
+	const findAll = async (page?: number, limit?: number): Promise<{ data: PaymentHistory[]; total: number }> => {
+		const [data, total] = await repo.findAndCount({
+			relations: ['order', 'order.plan', 'user'],
+			order: { createdAt: 'DESC' },
+			skip: page && limit ? (page - 1) * limit : undefined,
+			take: limit
+		})
+		return { data, total }
 	}
 
 	return {
 		create,
 		findByOrderId,
-		findByUserId
+		findByUserId,
+		findAll
 	}
 }

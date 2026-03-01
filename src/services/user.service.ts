@@ -1,7 +1,9 @@
 import { User } from '~/model/user.entity.js'
 import { getUserRepository } from '~/repository/user.repository.js'
+import { getSubscriptionRepository } from '~/repository/subscription.repository.js'
 
 const userRepo = getUserRepository()
+const subscriptionRepo = getSubscriptionRepository()
 
 export interface IGetAllUsersOptions {
 	page?: number
@@ -20,7 +22,30 @@ export const checkRegistedEmail = async (email: string): Promise<boolean> => {
 }
 
 export const getUserById = async (id: number) => {
-	return await findOne({ id })
+	const user = await findOne({ id })
+	const subscription = await subscriptionRepo.findActiveByUserId(id)
+
+	return {
+		...user,
+		subscription: subscription
+			? {
+					id: subscription.id,
+					planId: subscription.planId,
+					billingCycle: subscription.billingCycle,
+					startDate: subscription.startDate,
+					endDate: subscription.endDate,
+					status: subscription.status,
+					plan: subscription.plan
+						? {
+								id: subscription.plan.id,
+								name: subscription.plan.name,
+								displayName: subscription.plan.displayName,
+								features: subscription.plan.features
+							}
+						: null
+				}
+			: null
+	}
 }
 
 export const createUser = async (data: { email: string; password: string }): Promise<User> => {

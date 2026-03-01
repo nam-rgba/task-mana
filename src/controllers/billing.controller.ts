@@ -10,7 +10,7 @@ class BillingController {
 	 */
 	createPayment = async (req: Request, res: Response, next: NextFunction) => {
 		const { planId, billingCycle } = req.body
-		const userId = Number(req.headers['x-client-id'])
+		const userId = Number(req.headers['x-user-id'])
 		const ipAddr = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1'
 
 		const result = await billingService.createPayment({
@@ -39,7 +39,7 @@ class BillingController {
 	 */
 	vnpayReturn = async (req: Request, res: Response, next: NextFunction) => {
 		const vnpParams = req.query as Record<string, string>
-		const redirectUrl = billingService.handleReturn(vnpParams)
+		const redirectUrl = await billingService.handleReturn(vnpParams)
 		return res.redirect(redirectUrl)
 	}
 
@@ -47,7 +47,7 @@ class BillingController {
 	 * GET /api/billing/subscription
 	 */
 	getSubscription = async (req: Request, res: Response, next: NextFunction) => {
-		const userId = Number(req.headers['x-client-id'])
+		const userId = Number(req.headers['x-user-id'])
 		const subscription = await billingService.getSubscription(userId)
 		return new OKResponse('Get subscription successfully!', 200, subscription).send(res)
 	}
@@ -56,7 +56,7 @@ class BillingController {
 	 * GET /api/billing/orders
 	 */
 	getOrders = async (req: Request, res: Response, next: NextFunction) => {
-		const userId = Number(req.headers['x-client-id'])
+		const userId = Number(req.headers['x-user-id'])
 		const { page, limit } = req.query
 		const orders = await billingService.getOrders(
 			userId,
@@ -64,6 +64,41 @@ class BillingController {
 			limit ? Number(limit) : undefined
 		)
 		return new OKResponse('Get orders successfully!', 200, orders).send(res)
+	}
+
+	/**
+	 * GET /api/billing/orders/all (admin)
+	 */
+	getAllOrders = async (req: Request, res: Response, next: NextFunction) => {
+		const { page, limit } = req.query
+		const orders = await billingService.getAllOrders(page ? Number(page) : undefined, limit ? Number(limit) : undefined)
+		return new OKResponse('Get all orders successfully!', 200, orders).send(res)
+	}
+
+	/**
+	 * GET /api/billing/transaction-history
+	 */
+	getTransactionHistory = async (req: Request, res: Response, next: NextFunction) => {
+		const userId = Number(req.headers['x-user-id'])
+		const { page, limit } = req.query
+		const history = await billingService.getTransactionHistory(
+			userId,
+			page ? Number(page) : undefined,
+			limit ? Number(limit) : undefined
+		)
+		return new OKResponse('Get transaction history successfully!', 200, history).send(res)
+	}
+
+	/**
+	 * GET /api/billing/transaction-history/all (admin)
+	 */
+	getAllTransactionHistory = async (req: Request, res: Response, next: NextFunction) => {
+		const { page, limit } = req.query
+		const history = await billingService.getAllTransactionHistory(
+			page ? Number(page) : undefined,
+			limit ? Number(limit) : undefined
+		)
+		return new OKResponse('Get all transaction history successfully!', 200, history).send(res)
 	}
 
 	/**
@@ -83,7 +118,7 @@ class BillingController {
 	 */
 	refund = async (req: Request, res: Response, next: NextFunction) => {
 		const { orderCode, amount, reason } = req.body
-		const userId = Number(req.headers['x-client-id'])
+		const userId = Number(req.headers['x-user-id'])
 		const ipAddr = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1'
 
 		const result = await billingService.refund({
@@ -95,6 +130,44 @@ class BillingController {
 		})
 
 		return new OKResponse('Refund processed successfully!', 200, result).send(res)
+	}
+
+	// ===================== DASHBOARD ANALYTICS =====================
+
+	/**
+	 * GET /api/billing/admin/dashboard/overview
+	 */
+	getDashboardOverview = async (req: Request, res: Response, next: NextFunction) => {
+		const result = await billingService.getDashboardOverview()
+		return new OKResponse('Get dashboard overview successfully!', 200, result).send(res)
+	}
+
+	/**
+	 * GET /api/billing/admin/dashboard/revenue/:year
+	 */
+	getRevenueByYear = async (req: Request, res: Response, next: NextFunction) => {
+		const year = Number(req.params.year) || new Date().getFullYear()
+		const result = await billingService.getRevenueByYear(year)
+		return new OKResponse('Get revenue by year successfully!', 200, result).send(res)
+	}
+
+	/**
+	 * GET /api/billing/admin/dashboard/revenue/:year/:month
+	 */
+	getRevenueByMonth = async (req: Request, res: Response, next: NextFunction) => {
+		const year = Number(req.params.year) || new Date().getFullYear()
+		const month = Number(req.params.month) || new Date().getMonth() + 1
+		const result = await billingService.getRevenueByMonth(year, month)
+		return new OKResponse('Get revenue by month successfully!', 200, result).send(res)
+	}
+
+	/**
+	 * GET /api/billing/admin/dashboard/recent-orders
+	 */
+	getRecentOrders = async (req: Request, res: Response, next: NextFunction) => {
+		const limit = Number(req.query.limit) || 10
+		const result = await billingService.getRecentOrders(limit)
+		return new OKResponse('Get recent orders successfully!', 200, result).send(res)
 	}
 }
 

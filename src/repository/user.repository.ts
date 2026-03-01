@@ -33,7 +33,7 @@ const normalizePaging = ({ page, limit, skip }: IQuery) => {
 }
 
 const buildFilter = (query: QueryFilter = {}) => {
-	const { q, email, name } = query
+	const { q, email, name, teamId } = query
 	const filter: any = {}
 
 	if (q) {
@@ -46,6 +46,10 @@ const buildFilter = (query: QueryFilter = {}) => {
 
 	if (name) {
 		filter.where = { ...(filter.where || {}), name: ILike(`%${name}%`) }
+	}
+
+	if (teamId) {
+		filter.where = { ...(filter.where || {}), teamMembers: { teamId: Number(teamId) } }
 	}
 
 	return filter

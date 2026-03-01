@@ -172,15 +172,67 @@ class BillingService {
 
 	/**
 	 * Handle VNPAY return URL (redirect user back to frontend)
+	 * Also processes payment if IPN hasn't been called yet (e.g., localhost development)
 	 */
-	handleReturn(vnpParams: Record<string, string>) {
+	async handleReturn(vnpParams: Record<string, string>) {
 		const isValid = verifyChecksum(vnpParams)
 		const responseCode = vnpParams['vnp_ResponseCode']
 		const orderCode = vnpParams['vnp_TxnRef']
 
 		const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
 
+		// If payment is successful and checksum valid, process the payment as fallback
+		// This handles cases where IPN can't reach the server (e.g., localhost)
 		if (isValid && responseCode === '00') {
+			const order = await this.orderRepo.findOneByVnpTxnRef(orderCode)
+
+			// Only process if order exists and hasn't been processed yet
+			if (order && order.status === OrderStatus.PENDING) {
+				const transactionNo = vnpParams['vnp_TransactionNo']
+				const payDate = vnpParams['vnp_PayDate']
+				const amount = Number(vnpParams['vnp_Amount']) / 100
+
+				// Verify amount matches
+				if (order.amount === amount) {
+					// Update order status
+					await this.orderRepo.update(order.id, {
+						status: OrderStatus.PAID,
+						vnpTransactionNo: transactionNo,
+						vnpResponseCode: responseCode,
+						vnpPayDate: payDate,
+						paidAt: new Date()
+					})
+
+					// Deactivate current subscription
+					await this.subscriptionRepo.deactivateByUserId(order.userId)
+
+					// Create new subscription
+					const startDate = new Date()
+					const endDate =
+						order.billingCycle === BillingCycle.MONTHLY
+							? dayjs(startDate).add(1, 'month').toDate()
+							: dayjs(startDate).add(1, 'year').toDate()
+
+					await this.subscriptionRepo.create({
+						userId: order.userId,
+						planId: order.planId,
+						billingCycle: order.billingCycle,
+						startDate,
+						endDate,
+						status: SubscriptionStatus.ACTIVE,
+						autoRenew: false
+					})
+
+					// Log payment history
+					await this.paymentHistoryRepo.create({
+						orderId: order.id,
+						userId: order.userId,
+						action: PaymentAction.PAID,
+						rawData: { ...vnpParams, source: 'return_url_fallback' }
+					})
+				}
+			}
+
 			return `${frontendUrl}/billing/result?status=success&orderCode=${orderCode}`
 		} else {
 			return `${frontendUrl}/billing/result?status=failed&orderCode=${orderCode}&code=${responseCode}`
@@ -191,7 +243,22 @@ class BillingService {
 	 * Get active subscription for a user
 	 */
 	async getSubscription(userId: number) {
-		return await this.subscriptionRepo.findActiveByUserId(userId)
+		const subscription = await this.subscriptionRepo.findActiveByUserId(userId)
+		if (!subscription) return null
+
+		return {
+			...subscription,
+			plan: subscription.plan
+				? {
+						id: subscription.plan.id,
+						name: subscription.plan.name,
+						displayName: subscription.plan.displayName,
+						monthlyPrice: subscription.plan.monthlyPrice,
+						yearlyPrice: subscription.plan.yearlyPrice,
+						features: subscription.plan.features
+					}
+				: null
+		}
 	}
 
 	/**
@@ -199,6 +266,27 @@ class BillingService {
 	 */
 	async getOrders(userId: number, page?: number, limit?: number) {
 		return await this.orderRepo.findByUserId(userId, page, limit)
+	}
+
+	/**
+	 * Get all orders (admin)
+	 */
+	async getAllOrders(page?: number, limit?: number) {
+		return await this.orderRepo.findAll(page, limit)
+	}
+
+	/**
+	 * Get transaction history for a user
+	 */
+	async getTransactionHistory(userId: number, page?: number, limit?: number) {
+		return await this.paymentHistoryRepo.findByUserId(userId, page, limit)
+	}
+
+	/**
+	 * Get all transaction history (admin)
+	 */
+	async getAllTransactionHistory(page?: number, limit?: number) {
+		return await this.paymentHistoryRepo.findAll(page, limit)
 	}
 
 	/**
@@ -267,6 +355,124 @@ class BillingService {
 		}
 
 		return result
+	}
+
+	// ===================== DASHBOARD ANALYTICS =====================
+
+	/**
+	 * Get dashboard overview stats
+	 */
+	async getDashboardOverview() {
+		const [orderStats, activeSubscriptions, subscriptionsByPlan] = await Promise.all([
+			this.orderRepo.getTotalStats(),
+			this.subscriptionRepo.countActive(),
+			this.subscriptionRepo.getActiveByPlan()
+		])
+
+		return {
+			...orderStats,
+			activeSubscriptions,
+			subscriptionsByPlan
+		}
+	}
+
+	/**
+	 * Get revenue analytics by year (monthly breakdown)
+	 */
+	async getRevenueByYear(year: number) {
+		const [monthlyRevenue, revenueByPlan, newSubscriptions] = await Promise.all([
+			this.orderRepo.getRevenueStats(year),
+			this.orderRepo.getRevenueByPlan(year),
+			this.subscriptionRepo.getNewSubscriptionsByMonth(year)
+		])
+
+		// Fill in missing months with 0
+		const allMonths = Array.from({ length: 12 }, (_, i) => i + 1)
+		const monthlyRevenueMap = new Map(monthlyRevenue.map((m) => [m.month, m]))
+		const subscriptionsMap = new Map(newSubscriptions.map((s) => [s.month, s]))
+
+		const monthlyData = allMonths.map((month) => ({
+			month,
+			revenue: monthlyRevenueMap.get(month)?.revenue || 0,
+			orderCount: monthlyRevenueMap.get(month)?.orderCount || 0,
+			newSubscriptions: subscriptionsMap.get(month)?.count || 0
+		}))
+
+		// Calculate totals
+		const totalRevenue = monthlyData.reduce((sum, m) => sum + m.revenue, 0)
+		const totalOrders = monthlyData.reduce((sum, m) => sum + m.orderCount, 0)
+		const totalNewSubscriptions = monthlyData.reduce((sum, m) => sum + m.newSubscriptions, 0)
+
+		return {
+			year,
+			monthlyData,
+			revenueByPlan,
+			summary: {
+				totalRevenue,
+				totalOrders,
+				totalNewSubscriptions,
+				averageMonthlyRevenue: Math.round(totalRevenue / 12)
+			}
+		}
+	}
+
+	/**
+	 * Get revenue analytics for a specific month
+	 */
+	async getRevenueByMonth(year: number, month: number) {
+		const [revenueByPlan, recentOrders] = await Promise.all([
+			this.orderRepo.getRevenueByPlan(year, month),
+			this.orderRepo.getRecentOrders(20)
+		])
+
+		// Filter recent orders by the specific month
+		const monthOrders = recentOrders.filter((order) => {
+			if (!order.paidAt) return false
+			const orderDate = new Date(order.paidAt)
+			return orderDate.getFullYear() === year && orderDate.getMonth() + 1 === month
+		})
+
+		const totalRevenue = revenueByPlan.reduce((sum, p) => sum + p.revenue, 0)
+		const totalOrders = revenueByPlan.reduce((sum, p) => sum + p.orderCount, 0)
+
+		return {
+			year,
+			month,
+			revenueByPlan,
+			summary: {
+				totalRevenue,
+				totalOrders
+			},
+			recentOrders: monthOrders.slice(0, 10).map((order) => ({
+				id: order.id,
+				orderCode: order.orderCode,
+				amount: order.amount,
+				status: order.status,
+				planName: order.plan?.displayName,
+				userName: order.user?.name || order.user?.email,
+				paidAt: order.paidAt,
+				createdAt: order.createdAt
+			}))
+		}
+	}
+
+	/**
+	 * Get recent orders for dashboard
+	 */
+	async getRecentOrders(limit: number = 10) {
+		const orders = await this.orderRepo.getRecentOrders(limit)
+		return orders.map((order) => ({
+			id: order.id,
+			orderCode: order.orderCode,
+			amount: order.amount,
+			status: order.status,
+			billingCycle: order.billingCycle,
+			planName: order.plan?.displayName,
+			userName: order.user?.name || order.user?.email,
+			userEmail: order.user?.email,
+			paidAt: order.paidAt,
+			createdAt: order.createdAt
+		}))
 	}
 }
 
