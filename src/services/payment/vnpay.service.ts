@@ -1,6 +1,11 @@
 import crypto from 'crypto'
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc.js'
+import timezone from 'dayjs/plugin/timezone.js'
 import { VnpayConfig, VnpayParams } from '~/types/billing.type.js'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const vnpayConfig: VnpayConfig = {
 	vnpTmnCode: process.env.VNP_TMN_CODE || '',
@@ -35,8 +40,8 @@ export function createPaymentUrl(params: {
 }): string {
 	const { orderId, amount, orderInfo, ipAddr, locale = 'vn', bankCode } = params
 
-	const createDate = dayjs().format('YYYYMMDDHHmmss')
-	const expireDate = dayjs().add(15, 'minute').format('YYYYMMDDHHmmss')
+	const createDate = dayjs().tz('Asia/Ho_Chi_Minh').format('YYYYMMDDHHmmss')
+	const expireDate = dayjs().add(15, 'minute').tz('Asia/Ho_Chi_Minh').format('YYYYMMDDHHmmss')
 
 	let vnpParams: Record<string, string> = {
 		vnp_Version: '2.1.0',
@@ -102,8 +107,9 @@ export async function queryTransaction(params: {
 	ipAddr: string
 }): Promise<Record<string, any>> {
 	const { vnpTxnRef, transDate, ipAddr } = params
-	const requestId = dayjs().format('YYYYMMDDHHmmss') + '_' + Math.random().toString(36).substring(7)
-	const createDate = dayjs().format('YYYYMMDDHHmmss')
+	const requestId =
+		dayjs().tz('Asia/Ho_Chi_Minh').format('YYYYMMDDHHmmss') + '_' + Math.random().toString(36).substring(7)
+	const createDate = dayjs().tz('Asia/Ho_Chi_Minh').format('YYYYMMDDHHmmss')
 
 	const queryData = {
 		vnp_RequestId: requestId,
@@ -155,8 +161,9 @@ export async function refundTransaction(params: {
 	ipAddr: string
 }): Promise<Record<string, any>> {
 	const { vnpTxnRef, transactionNo, amount, transDate, createBy, ipAddr } = params
-	const requestId = dayjs().format('YYYYMMDDHHmmss') + '_' + Math.random().toString(36).substring(7)
-	const createDate = dayjs().format('YYYYMMDDHHmmss')
+	const requestId =
+		dayjs().tz('Asia/Ho_Chi_Minh').format('YYYYMMDDHHmmss') + '_' + Math.random().toString(36).substring(7)
+	const createDate = dayjs().tz('Asia/Ho_Chi_Minh').format('YYYYMMDDHHmmss')
 
 	const refundData = {
 		vnp_RequestId: requestId,
