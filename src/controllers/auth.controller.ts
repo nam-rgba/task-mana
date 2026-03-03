@@ -5,7 +5,11 @@ import { CreatedResponse, OKResponse } from '~/utils/success.response.js'
 class AuthController {
 	// register
 	register = async (req: Request, res: Response, next: NextFunction) => {
-		new CreatedResponse('Register successfully', 201, await register(req.body.email, req.body.password)).send(res)
+		new CreatedResponse(
+			'Register successfully',
+			201,
+			await register(req.body.email, req.body.name, req.body.password)
+		).send(res)
 	}
 
 	// login

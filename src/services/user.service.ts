@@ -48,7 +48,7 @@ export const getUserById = async (id: number) => {
 	}
 }
 
-export const createUser = async (data: { email: string; password: string }): Promise<User> => {
+export const createUser = async (data: { email: string; password: string; name: string }): Promise<User> => {
 	return await create({
 		...data
 	})

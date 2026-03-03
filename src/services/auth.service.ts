@@ -5,10 +5,11 @@ import { randomBytes } from 'crypto'
 import { createTokenPair } from '~/utils/auth/auth.js'
 import { SessionService } from './token.service.js'
 import _ from 'lodash'
+import { sendWelcomeEmail } from './email/auth-email.service.js'
 
 const sessionService = new SessionService()
 
-const register = async (email: string, password: string) => {
+const register = async (email: string, name: string, password: string) => {
 	// step 1: find if user exists
 	const existingUser = await checkRegistedEmail(email)
 
@@ -20,7 +21,7 @@ const register = async (email: string, password: string) => {
 	const hashedPassword = await bcrypt.hashSync(password, 10)
 
 	// step 3: create user
-	const newUser = await createUser({ email, password: hashedPassword })
+	const newUser = await createUser({ email, password: hashedPassword, name })
 
 	// step 4:token setting
 	if (!newUser) throw new BadRequestError('Create user failed')
@@ -48,6 +49,13 @@ const register = async (email: string, password: string) => {
 	if (!newUserWithToken) throw new BadRequestError('Create token row failed!')
 
 	const resUser = _.pick(newUser, ['id', 'email'])
+
+	// TODO: send welcome email
+	try {
+		sendWelcomeEmail(newUser.email, newUser.name)
+	} catch (error) {
+		console.error('Failed to send welcome email:', error)
+	}
 	return { user: resUser, token }
 }
 
