@@ -1,13 +1,17 @@
 import { BadRequestError } from '~/utils/error.reponse.js'
-import { getUserByEmail, createUser, checkRegistedEmail } from './user.service.js'
+import { getUserByEmail, createUser, checkRegistedEmail, updateUser } from './user.service.js'
 import bcrypt from 'bcryptjs'
 import { randomBytes } from 'crypto'
 import { createTokenPair } from '~/utils/auth/auth.js'
 import { SessionService } from './token.service.js'
 import _ from 'lodash'
-import { sendWelcomeEmail } from './email/auth-email.service.js'
+import { sendVerificationEmail, sendWelcomeEmail } from './email/auth-email.service.js'
+import { getOtpRepository } from '~/repository/otp.repository.js'
+import { OtpTokenType } from '~/model/otp.entity.js'
 
 const sessionService = new SessionService()
+
+const otpRepo = getOtpRepository()
 
 const register = async (email: string, name: string, password: string) => {
 	// step 1: find if user exists
@@ -50,12 +54,19 @@ const register = async (email: string, name: string, password: string) => {
 
 	const resUser = _.pick(newUser, ['id', 'email'])
 
-	// TODO: send welcome email
-	try {
-		sendWelcomeEmail(newUser.email, newUser.name)
-	} catch (error) {
-		console.error('Failed to send welcome email:', error)
-	}
+	const otptoken = await otpRepo.create({
+		email: newUser.email,
+		token: randomBytes(16).toString('hex'),
+		expiresAt: new Date(Date.now() + 1 * 60 * 60 * 1000), // expires in 1 hours
+		type: OtpTokenType.VERIFY_EMAIL,
+		userId: newUser.id,
+		createdAt: new Date()
+	})
+
+	if (!otptoken) throw new BadRequestError('Create otp token failed!')
+
+	await sendVerificationEmail(newUser.email, newUser.name!, otptoken.token)
+
 	return { user: resUser, token }
 }
 
@@ -96,4 +107,25 @@ const login = async (email: string, password: string) => {
 	return { user: resUser, token }
 }
 
-export { register, login }
+const verifyEmail = async (token: string) => {
+	const otpRecord = await otpRepo.findoneByToken(token)
+	if (!otpRecord) {
+		throw new BadRequestError('Invalid or expired token')
+	}
+
+	if (otpRecord.expiresAt < new Date()) {
+		throw new BadRequestError('Token has expired')
+	}
+
+	const user = await getUserByEmail(otpRecord.email)
+	if (!user) {
+		throw new BadRequestError('User not found')
+	}
+
+	user.isEmailVerified = true
+	await updateUser(user.id!, { isEmailVerified: true })
+
+	return user
+}
+
+export { register, login, verifyEmail }

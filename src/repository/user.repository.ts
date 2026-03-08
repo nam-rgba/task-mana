@@ -34,6 +34,8 @@ const normalizePaging = ({ page, limit, skip }: IQuery) => {
 
 const buildFilter = (query: QueryFilter = {}) => {
 	const { q, email, name, teamId } = query
+
+	console.log('Building filter with query:', query) // Log the incoming query parameters
 	const filter: any = {}
 
 	if (q) {
@@ -49,7 +51,7 @@ const buildFilter = (query: QueryFilter = {}) => {
 	}
 
 	if (teamId) {
-		filter.where = { ...(filter.where || {}), teamMembers: { teamId: Number(teamId) } }
+		filter.where = { ...(filter.where || {}), teamMemberships: { teamId: Number(teamId) } }
 	}
 
 	return filter
@@ -108,6 +110,7 @@ export const getUserRepository = () => {
 				position: true,
 				yearOfExperience: true,
 				discordUserId: true,
+				isEmailVerified: true,
 				password: type === 'AUTH' ? true : false
 			}
 		})

@@ -10,4 +10,7 @@ router.post('/register', AsyncHandler(AuthController.register))
 // login
 router.post('/login', AsyncHandler(AuthController.login))
 
+// verify email
+router.get('/verify-email', AsyncHandler(AuthController.verifyEmail))
+
 export { router }

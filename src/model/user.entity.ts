@@ -45,6 +45,9 @@ export class User {
 	@OneToMany(() => Order, (order) => order.user)
 	orders: Awaited<Order[]>
 
+	@Column({ type: 'boolean', default: false })
+	isEmailVerified: boolean
+
 	@CreateDateColumn()
 	createdAt!: Date
 

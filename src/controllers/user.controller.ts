@@ -4,7 +4,7 @@ import { SuccessResponse } from '~/utils/success.response.js'
 
 class UserController {
 	getAllUsers = async (req: Request, res: Response) => {
-		const { page, limit, query, sort } = req.query
+		const { page, limit, ...query } = req.query
 
 		const users = await getAllUsers({
 			page: Number(page) || 1,
@@ -34,7 +34,7 @@ class UserController {
 
 		new SuccessResponse({
 			message: 'Update user profile successfully',
-			statusCode: 200,
+			statusCode: 201,
 			metadata: await updateUser(Number(userId), req.body)
 		}).send(res)
 	}
