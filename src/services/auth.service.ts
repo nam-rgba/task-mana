@@ -8,6 +8,8 @@ import _ from 'lodash'
 import { sendVerificationEmail, sendWelcomeEmail } from './email/auth-email.service.js'
 import { getOtpRepository } from '~/repository/otp.repository.js'
 import { OtpTokenType } from '~/model/otp.entity.js'
+import axios from 'axios'
+import { AuthProvider } from '~/model/enums/auth-provider.enum.js'
 
 const sessionService = new SessionService()
 
@@ -128,4 +130,91 @@ const verifyEmail = async (token: string) => {
 	return user
 }
 
-export { register, login, verifyEmail }
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo'
+
+const getGoogleAuthUrl = () => {
+	const clientId = process.env.GG_OAUTH_CLIENT_ID
+	const redirectUri = process.env.GG_OAUTH_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback'
+
+	const params = new URLSearchParams({
+		client_id: clientId!,
+		redirect_uri: redirectUri,
+		response_type: 'code',
+		scope: 'email profile',
+		access_type: 'offline',
+		prompt: 'consent'
+	})
+
+	return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
+}
+
+const googleLogin = async (code: string) => {
+	const clientId = process.env.GG_OAUTH_CLIENT_ID
+	const clientSecret = process.env.GG_OAUTH_CLIENT_SECRET
+	const redirectUri = process.env.GG_OAUTH_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback'
+
+	const tokenResponse = await axios.post(GOOGLE_TOKEN_URL, {
+		code,
+		client_id: clientId,
+		client_secret: clientSecret,
+		redirect_uri: redirectUri,
+		grant_type: 'authorization_code'
+	})
+
+	const { access_token } = tokenResponse.data
+
+	const userInfoResponse = await axios.get(GOOGLE_USERINFO_URL, {
+		headers: { Authorization: `Bearer ${access_token}` }
+	})
+
+	const { email, name, picture } = userInfoResponse.data
+
+	if (!email) throw new BadRequestError('Cannot get email from Google')
+
+	let user = await getUserByEmail(email)
+
+	if (!user || !user.id) {
+		const newUser = await createUser({
+			email,
+			name: name || '',
+			password: null,
+			avatar: picture || null,
+			isEmailVerified: true,
+			authProvider: AuthProvider.GOOGLE
+		} as any)
+		user = { ...newUser, lastTeamId: undefined }
+	} else {
+		if (!user.avatar && picture) {
+			await updateUser(user.id, { avatar: picture })
+			user.avatar = picture
+		}
+	}
+
+	const accessKey = randomBytes(16).toString('hex')
+	const refreshKey = randomBytes(16).toString('hex')
+
+	const token = createTokenPair(
+		{
+			userId: user.id,
+			email: user.email
+		},
+		accessKey,
+		refreshKey
+	)
+
+	if (!token) throw new BadRequestError('Create token failed')
+
+	const newUserWithToken = sessionService.upsertSession({
+		userId: user.id!,
+		accessKey: accessKey,
+		refreshKey: refreshKey,
+		refreshToken: token.refreshToken
+	})
+	if (!newUserWithToken) throw new BadRequestError('Create token row failed!')
+
+	const resUser = _.pick(user, ['id', 'email', 'avatar', 'name'])
+	return { user: resUser, token }
+}
+
+export { register, login, verifyEmail, getGoogleAuthUrl, googleLogin }

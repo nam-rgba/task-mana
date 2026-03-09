@@ -13,4 +13,8 @@ router.post('/login', AsyncHandler(AuthController.login))
 // verify email
 router.get('/verify-email', AsyncHandler(AuthController.verifyEmail))
 
+// Google OAuth
+router.get('/google', AsyncHandler(AuthController.googleAuth))
+router.get('/google/callback', AsyncHandler(AuthController.googleCallback))
+
 export { router }

@@ -48,7 +48,12 @@ export const getUserById = async (id: number) => {
 	}
 }
 
-export const createUser = async (data: { email: string; password: string; name: string }): Promise<User> => {
+export const createUser = async (data: {
+	email: string
+	password?: string | null
+	name: string
+	[key: string]: any
+}): Promise<User> => {
 	return await create({
 		...data
 	})

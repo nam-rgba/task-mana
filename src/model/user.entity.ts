@@ -4,6 +4,7 @@ import { TeamMember } from './teamMember.entity.js'
 import { Project } from './project.entity.js'
 import { Subscription } from './subscription.entity.js'
 import { Order } from './order.entity.js'
+import { AuthProvider } from './enums/auth-provider.enum.js'
 
 @Entity('users')
 export class User {
@@ -14,8 +15,8 @@ export class User {
 	@Column({ type: 'varchar', length: 225, unique: true })
 	email: string
 
-	@Column({ type: 'varchar' })
-	password: string
+	@Column({ type: 'varchar', nullable: true })
+	password: string | null
 
 	@Column({ type: 'varchar', default: '' })
 	name: string
@@ -47,6 +48,9 @@ export class User {
 
 	@Column({ type: 'boolean', default: false })
 	isEmailVerified: boolean
+
+	@Column({ type: 'varchar', default: AuthProvider.LOCAL })
+	authProvider: AuthProvider
 
 	@CreateDateColumn()
 	createdAt!: Date
