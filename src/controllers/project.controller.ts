@@ -52,7 +52,8 @@ class ProjectController {
 		const absolutePath = path.resolve(file.path)
 		const uploadResult = await CloudinaryService.uploadImageFromLocal({
 			filePath: absolutePath,
-			folder: 'use-cases'
+			folder: 'use-cases',
+			resourceType: 'raw'
 		})
 
 		// Lưu useCaseUrl vào project

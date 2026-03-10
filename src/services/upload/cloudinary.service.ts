@@ -3,7 +3,15 @@ import { BadRequestError } from '~/utils/error.reponse.js'
 
 import fs from 'fs'
 
-const uploadImageFromLocal = async ({ filePath, folder }: { filePath: string; folder?: string }) => {
+const uploadImageFromLocal = async ({
+	filePath,
+	folder,
+	resourceType = 'image'
+}: {
+	filePath: string
+	folder?: string
+	resourceType?: 'image' | 'raw' | 'auto'
+}) => {
 	console.log(filePath)
 	try {
 		const fileStream = fs.createReadStream(filePath)
@@ -11,7 +19,8 @@ const uploadImageFromLocal = async ({ filePath, folder }: { filePath: string; fo
 		const uploadResult: any = await new Promise((resolve, reject) => {
 			const uploadStream = cloudinary.uploader.upload_stream(
 				{
-					folder: folder || 'default'
+					folder: folder || 'default',
+					resource_type: resourceType
 				},
 				(error, result) => {
 					if (error) return reject(error)

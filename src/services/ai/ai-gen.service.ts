@@ -119,7 +119,7 @@ class AiGenService {
 		formData.append('members', JSON.stringify(members))
 
 		try {
-			const res = await this.axiosInstance.post(`${this.aiServiceUrl}/llm/generate_task_and_assign`, formData, {
+			const res = await this.axiosInstance.post(`${this.aiServiceUrl}/llm/generate_tasks`, formData, {
 				headers: formData.getHeaders(),
 				timeout: 300_000 // 5 phút cho task nặng
 			})

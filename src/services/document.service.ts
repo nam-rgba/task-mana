@@ -25,9 +25,11 @@ export class DocumentService {
 
 		const absolutePath = path.resolve(file.path)
 
+		const isImage = file.mimetype.startsWith('image/')
 		const uploadResult = await CloudinaryService.uploadImageFromLocal({
 			filePath: absolutePath,
-			folder: `documents/project-${data.projectId}`
+			folder: `documents/project-${data.projectId}`,
+			resourceType: isImage ? 'image' : 'raw'
 		})
 
 		// Xóa file tạm sau khi upload
