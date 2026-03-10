@@ -1,5 +1,6 @@
-import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm'
+import { Entity, Column, Index, ManyToOne, OneToMany, JoinColumn } from 'typeorm'
 import { AppBaseEntity } from './base.entity.js'
+import { Schedule } from './schedule.entity.js'
 import { Team } from './team.entity.js'
 import { User } from './user.entity.js'
 import { ProjectType, ProjectStatus, ProjectVisibility, DefaultAssigneeType } from './enums/project.enum.js'
@@ -99,6 +100,12 @@ export class Project extends AppBaseEntity {
 	// Issue key chạy auto: PROJECT-1, PROJECT-2
 	@Column({ type: 'int', default: 0 })
 	lastIssueNumber: number
+
+	@Column({ type: 'varchar', length: 500, nullable: true })
+	useCaseUrl?: string
+
+	@OneToMany(() => Schedule, (schedule) => schedule.project)
+	schedules: Awaited<Schedule[]>
 
 	// Custom config thêm (mở rộng kiểu Jira)
 	@Column({ type: 'jsonb', nullable: true })

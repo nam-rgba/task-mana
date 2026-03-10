@@ -14,11 +14,14 @@ import { Subscription } from '~/model/subscription.entity.js'
 import { Order } from '~/model/order.entity.js'
 import { PaymentHistory } from '~/model/payment-history.entity.js'
 import { otp } from '~/model/otp.entity.js'
+import { Schedule } from '~/model/schedule.entity.js'
+import { TaskDependency } from '~/model/task-dependency.entity.js'
+import { Milestone } from '~/model/milestone.entity.js'
 
 export const AppDataSource = new DataSource({
 	type: 'postgres',
 	url: process.env.DATABASE_URL,
 	synchronize: true,
 	logging: false,
-	entities: [User, Token, Task, Team, TeamMember, Project, AiFeedback, Plan, Subscription, Order, PaymentHistory, otp]
+	entities: [User, Token, Task, Team, TeamMember, Project, AiFeedback, Plan, Subscription, Order, PaymentHistory, otp, Schedule, TaskDependency, Milestone]
 })

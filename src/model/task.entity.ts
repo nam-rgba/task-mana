@@ -10,6 +10,7 @@ import {
 import { TaskPriority, TaskStatus, TaskType, QCReviewStatus } from '~/types/task.type.js'
 import { User } from './user.entity.js'
 import { Project } from './project.entity.js'
+import { Schedule } from './schedule.entity.js'
 
 @Entity({ name: 'tasks' })
 export class Task {
@@ -29,7 +30,23 @@ export class Task {
 	type!: TaskType
 
 	@Column({ type: 'int', nullable: true })
+	startDate?: number
+
+	@Column({ type: 'int', nullable: true })
 	dueDate?: number
+
+	@Column({ type: 'int', nullable: true })
+	duration?: number
+
+	@Column({ type: 'int', default: 0 })
+	sortOrder: number
+
+	@Column({ type: 'int', nullable: true })
+	scheduleId?: number
+
+	@ManyToOne(() => Schedule, { nullable: true, eager: false, onDelete: 'SET NULL' })
+	@JoinColumn({ name: 'scheduleId' })
+	schedule?: Schedule
 
 	@Column({ type: 'float', default: 0 })
 	estimateEffort: number

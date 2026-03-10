@@ -68,10 +68,6 @@ class TeamService {
 		if (!query.id) {
 			throw new BadRequestError('Team id is required')
 		}
-		//bên auth service mình đã check user tồn tại rồi nên ko cần check lại ở đây
-		if (!userId) {
-			throw new BadRequestError('User id is required')
-		}
 
 		// kiểm tra user có phải thành viên của team ko
 		const teamMember = await this.teamMemberRepository.findOneByUserAndTeamId(userId, query.id)

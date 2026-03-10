@@ -10,6 +10,9 @@ import { databaseRouter } from './database.route.js'
 import { aiFeedbackRouter } from './ai-feedback.route.js'
 import { planRouter } from './plan.route.js'
 import { billingRouter } from './billing.route.js'
+import { scheduleRouter } from './schedule.route.js'
+import { ganttRouter } from './gantt.route.js'
+import { milestoneRouter } from './milestone.route.js'
 
 const router = express.Router()
 
@@ -37,5 +40,10 @@ router.use('/user', userRouter)
 router.use('/task', taskRouter)
 router.use('/team', teamRouter)
 router.use('/project', projectRouter)
+
+// Gantt / Schedule / Milestone routes (nested under project)
+router.use('/project/:projectId/schedules', scheduleRouter)
+router.use('/project/:projectId/gantt', ganttRouter)
+router.use('/project/:projectId/milestones', milestoneRouter)
 
 export { router }

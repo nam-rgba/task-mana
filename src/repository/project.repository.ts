@@ -8,6 +8,14 @@ export const getProjectRepository = () => {
 		return await repo.findOneBy({ id })
 	}
 
+	const findOneWithSchedules = async (id: number): Promise<Project | null> => {
+		return await repo.findOne({
+			where: { id },
+			relations: ['team', 'lead', 'schedules'],
+			order: { schedules: { sortOrder: 'ASC' } }
+		})
+	}
+
 	const getAllNameAndId = async (): Promise<{ id: number; name: string }[]> => {
 		const projects = await repo.find({
 			select: ['id', 'name']
@@ -52,6 +60,7 @@ export const getProjectRepository = () => {
 
 	return {
 		findOneById,
+		findOneWithSchedules,
 		findAll,
 		create,
 		update,

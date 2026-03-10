@@ -1,4 +1,6 @@
 import axios, { AxiosError } from 'axios'
+import FormData from 'form-data'
+import fs from 'fs'
 import http from 'http'
 import https from 'https'
 
@@ -109,6 +111,34 @@ class AiGenService {
 
 	async checkDuplicateTask(body: any) {
 		return this.makeRequest('/llm/duplicate', body)
+	}
+
+	async generateProjectSchedule(filePath: string, members: any[]) {
+		const formData = new FormData()
+		formData.append('file', fs.createReadStream(filePath))
+		formData.append('members', JSON.stringify(members))
+
+		try {
+			const res = await this.axiosInstance.post(`${this.aiServiceUrl}/llm/generate_task_and_assign`, formData, {
+				headers: formData.getHeaders(),
+				timeout: 300_000 // 5 phút cho task nặng
+			})
+			return res.data
+		} catch (error: any) {
+			if (error.code === 'ECONNRESET') {
+				throw new Error('Kết nối đến Python server bị đóng đột ngột. Kiểm tra server Python có đang chạy không.')
+			} else if (error.code === 'ECONNREFUSED') {
+				throw new Error(`Không thể kết nối đến Python server tại ${this.aiServiceUrl}. Server có đang chạy không?`)
+			} else if (error.code === 'ETIMEDOUT') {
+				throw new Error('Request timeout khi gọi Python server. Request mất quá 5 phút.')
+			} else if (error.response) {
+				throw new Error(`Python server trả về lỗi: ${error.response.status} - ${JSON.stringify(error.response.data)}`)
+			}
+			throw error
+		} finally {
+			// Xoá file tạm sau khi gửi xong
+			fs.unlink(filePath, () => {})
+		}
 	}
 }
 

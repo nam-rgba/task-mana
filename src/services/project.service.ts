@@ -1,6 +1,7 @@
 import { Project } from '~/model/project.entity.js'
 import { getProjectRepository } from '~/repository/project.repository.js'
 import { getTeamRepository } from '~/repository/team.repository.js'
+import { NotFoundError } from '~/utils/error.reponse.js'
 
 class ProjectService {
 	private repo = getProjectRepository()
@@ -17,6 +18,14 @@ class ProjectService {
 
 	async getProjectAndId() {
 		return await this.repo.getAllNameAndId()
+	}
+
+	async getProjectById(id: number) {
+		const project = await this.repo.findOneWithSchedules(id)
+		if (!project) {
+			throw new NotFoundError(`Project with id ${id} not found`)
+		}
+		return project
 	}
 
 	async createProject(projectData: Partial<Project>) {
