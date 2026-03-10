@@ -1,0 +1,5 @@
+export enum DocumentType {
+	PROJECT = 'PROJECT',
+	TASK_DESCRIPTION = 'TASK_DESCRIPTION',
+	TASK_RESULT = 'TASK_RESULT'
+}

@@ -17,11 +17,12 @@ import { otp } from '~/model/otp.entity.js'
 import { Schedule } from '~/model/schedule.entity.js'
 import { TaskDependency } from '~/model/task-dependency.entity.js'
 import { Milestone } from '~/model/milestone.entity.js'
+import { Document } from '~/model/document.entity.js'
 
 export const AppDataSource = new DataSource({
 	type: 'postgres',
 	url: process.env.DATABASE_URL,
 	synchronize: true,
 	logging: false,
-	entities: [User, Token, Task, Team, TeamMember, Project, AiFeedback, Plan, Subscription, Order, PaymentHistory, otp, Schedule, TaskDependency, Milestone]
+	entities: [User, Token, Task, Team, TeamMember, Project, AiFeedback, Plan, Subscription, Order, PaymentHistory, otp, Schedule, TaskDependency, Milestone, Document]
 })

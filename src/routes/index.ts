@@ -13,6 +13,7 @@ import { billingRouter } from './billing.route.js'
 import { scheduleRouter } from './schedule.route.js'
 import { ganttRouter } from './gantt.route.js'
 import { milestoneRouter } from './milestone.route.js'
+import { documentRouter } from './document.route.js'
 
 const router = express.Router()
 
@@ -45,5 +46,6 @@ router.use('/project', projectRouter)
 router.use('/project/:projectId/schedules', scheduleRouter)
 router.use('/project/:projectId/gantt', ganttRouter)
 router.use('/project/:projectId/milestones', milestoneRouter)
+router.use('/document', documentRouter)
 
 export { router }
