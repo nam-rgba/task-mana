@@ -10,6 +10,7 @@ import { Project } from '~/model/project.entity.js'
 import { TeamMember } from '~/model/teamMember.entity.js'
 import { ScheduleStatus } from '~/model/enums/gantt.enum.js'
 import { TaskStatus, TaskPriority, TaskType } from '~/types/task.type.js'
+import { aiLogger } from './ai-logger.service.js'
 
 class AiGenService {
 	private aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000/ai'
@@ -74,10 +75,14 @@ class AiGenService {
 	}
 
 	private async makeRequest(endpoint: string, body: any) {
+		const url = `${this.aiServiceUrl}${endpoint}`
+		const { startTime } = aiLogger.logRequest('POST', url, body)
 		try {
-			const res = await this.axiosInstance.post(`${this.aiServiceUrl}${endpoint}`, body)
+			const res = await this.axiosInstance.post(url, body)
+			aiLogger.logResponse('POST', url, res.status, res.data, startTime)
 			return res.data
 		} catch (error: any) {
+			aiLogger.logError('POST', url, error, startTime)
 			// Xử lý lỗi chi tiết hơn
 			if (error.code === 'ECONNRESET') {
 				throw new Error(`Kết nối đến Python server bị đóng đột ngột. Kiểm tra server Python có đang chạy không.`)
@@ -198,12 +203,18 @@ class AiGenService {
 			formData.append('project_id', projectId)
 
 			let aiPhases: any
+			const phaseUrl = `${this.aiServiceUrl}/llm/generate_phases`
+			const { startTime: phaseStart } = aiLogger.logRequest('POST', phaseUrl, '[FormData: file + project_id]')
 			try {
-				const result = await this.axiosInstance.post(`${this.aiServiceUrl}/llm/generate_phases`, formData, {
+				const result = await this.axiosInstance.post(phaseUrl, formData, {
 					headers: formData.getHeaders(),
 					timeout: 300_000
 				})
 				aiPhases = result.data
+				aiLogger.logResponse('POST', phaseUrl, result.status, aiPhases, phaseStart)
+			} catch (error: any) {
+				aiLogger.logError('POST', phaseUrl, error, phaseStart)
+				throw error
 			} finally {
 				fs.unlink(filePath, () => {})
 			}
@@ -277,6 +288,11 @@ class AiGenService {
 					totalSchedules: savedSchedules.length,
 					status: 'generating'
 				})
+
+				// Delay giữa các request để tránh overload AI server (đặc biệt qua ngrok)
+				if (i > 0) {
+					await new Promise((resolve) => setTimeout(resolve, 2000))
+				}
 
 				try {
 					const aiTasks = await this.makeRequest('/llm/generate_tasks', {
