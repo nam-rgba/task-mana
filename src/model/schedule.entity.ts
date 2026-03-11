@@ -29,11 +29,11 @@ export class Schedule extends AppBaseEntity {
 
 	@ManyToOne(() => Project, { onDelete: 'CASCADE' })
 	@JoinColumn({ name: 'projectId' })
-	project: Project
+	project: Awaited<Project>
 
 	@Column({ type: 'int', default: 0 })
 	sortOrder: number
 
 	@OneToMany(() => Task, (task) => task.schedule)
-	tasks: Task[]
+	tasks: Awaited<Task[]>
 }

@@ -24,5 +24,22 @@ export const AppDataSource = new DataSource({
 	url: process.env.DATABASE_URL,
 	synchronize: true,
 	logging: false,
-	entities: [User, Token, Task, Team, TeamMember, Project, AiFeedback, Plan, Subscription, Order, PaymentHistory, otp, Schedule, TaskDependency, Milestone, Document]
+	entities: [
+		User,
+		Token,
+		Task,
+		Team,
+		TeamMember,
+		Project,
+		AiFeedback,
+		Plan,
+		Subscription,
+		Order,
+		PaymentHistory,
+		otp,
+		Schedule,
+		TaskDependency,
+		Milestone,
+		Document
+	]
 })

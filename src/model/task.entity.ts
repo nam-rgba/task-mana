@@ -46,7 +46,7 @@ export class Task {
 
 	@ManyToOne(() => Schedule, { nullable: true, eager: false, onDelete: 'SET NULL' })
 	@JoinColumn({ name: 'scheduleId' })
-	schedule?: Schedule
+	schedule?: Awaited<Schedule>
 
 	@Column({ type: 'float', default: 0 })
 	estimateEffort: number
@@ -59,21 +59,21 @@ export class Task {
 
 	@ManyToOne(() => User, { eager: false })
 	@JoinColumn({ name: 'assigneeId' })
-	assignee?: User
+	assignee?: Awaited<User>
 
 	@Column({ type: 'int', nullable: true })
 	reviewerId?: number
 
 	@ManyToOne(() => User, { eager: false })
 	@JoinColumn({ name: 'reviewerId' })
-	reviewer?: User
+	reviewer?: Awaited<User>
 
 	@Column({ type: 'int', nullable: true })
 	projectId?: number
 
 	@ManyToOne(() => Project, { eager: false })
 	@JoinColumn({ name: 'projectId' })
-	project?: Project
+	project?: Awaited<Project>
 
 	@Column({ type: 'enum', enum: TaskPriority, nullable: true })
 	priority?: string
