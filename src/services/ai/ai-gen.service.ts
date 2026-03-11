@@ -6,6 +6,8 @@ import https from 'https'
 import { AppDataSource } from '~/db/data-source.js'
 import { Schedule } from '~/model/schedule.entity.js'
 import { Task } from '~/model/task.entity.js'
+import { Project } from '~/model/project.entity.js'
+import { TeamMember } from '~/model/teamMember.entity.js'
 import { ScheduleStatus } from '~/model/enums/gantt.enum.js'
 import { TaskStatus, TaskPriority, TaskType } from '~/types/task.type.js'
 
@@ -176,6 +178,175 @@ class AiGenService {
 		}
 
 		return savedSchedules
+	}
+
+	/**
+	 * SSE streaming: upload file → generate schedules → generate tasks per schedule
+	 * Sends SSE events to the Response object throughout the process.
+	 */
+	async generateProjectWithSSE(filePath: string, projectId: number, res: import('express').Response) {
+		const sendEvent = (event: string, data: any) => {
+			res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+		}
+
+		try {
+			// ── Step 1: Upload & generate phases from AI ──
+			sendEvent('phase_start', { message: 'Đang phân tích tài liệu...' })
+
+			const formData = new FormData()
+			formData.append('files', fs.createReadStream(filePath))
+			formData.append('project_id', projectId)
+
+			let aiPhases: any
+			try {
+				const result = await this.axiosInstance.post(`${this.aiServiceUrl}/llm/generate_phases`, formData, {
+					headers: formData.getHeaders(),
+					timeout: 300_000
+				})
+				aiPhases = result.data
+			} finally {
+				fs.unlink(filePath, () => {})
+			}
+
+			const phases: any[] = Array.isArray(aiPhases) ? aiPhases : (aiPhases?.phases ?? aiPhases?.data ?? [])
+
+			// ── Step 2: Save schedules to DB ──
+			const scheduleRepo = AppDataSource.getRepository(Schedule)
+			const taskRepo = AppDataSource.getRepository(Task)
+			const savedSchedules = []
+
+			for (let i = 0; i < phases.length; i++) {
+				const phase = phases[i]
+				const startTs = phase.start_date
+					? Math.floor(new Date(phase.start_date).getTime() / 1000)
+					: Math.floor(Date.now() / 1000)
+				const endTs = phase.end_date ? Math.floor(new Date(phase.end_date).getTime() / 1000) : startTs + 14 * 86400
+
+				const schedule = scheduleRepo.create({
+					name: phase.name || phase.title || `Phase ${i + 1}`,
+					description: phase.description || null,
+					startDate: startTs,
+					endDate: endTs,
+					status: ScheduleStatus.PLANNED,
+					color: phase.color || '#6366f1',
+					projectId,
+					sortOrder: i
+				})
+				const saved = await scheduleRepo.save(schedule)
+				savedSchedules.push(saved)
+			}
+
+			sendEvent('schedules_done', {
+				schedules: savedSchedules,
+				total: savedSchedules.length
+			})
+
+			// ── Step 3: Load team members for this project ──
+			const project = await AppDataSource.getRepository(Project).findOne({
+				where: { id: projectId },
+				select: ['id', 'teamId']
+			})
+
+			const teamMembers = project?.teamId
+				? await AppDataSource.getRepository(TeamMember).find({
+						where: { teamId: project.teamId, isActive: true },
+						relations: ['user']
+					})
+				: []
+
+			const users = teamMembers
+				.filter((tm) => tm.user)
+				.map((tm) => ({
+					id: tm.user.id,
+					name: tm.user.name,
+					email: tm.user.email,
+					position: tm.user.position || '',
+					skills: [] as string[],
+					experience_years: tm.user.yearOfExperience ?? 0
+				}))
+
+			// ── Step 4: Generate tasks for each schedule ──
+			let totalTasksCreated = 0
+
+			for (let i = 0; i < savedSchedules.length; i++) {
+				const schedule = savedSchedules[i]
+
+				sendEvent('task_progress', {
+					scheduleIndex: i,
+					scheduleName: schedule.name,
+					totalSchedules: savedSchedules.length,
+					status: 'generating'
+				})
+
+				try {
+					const aiTasks = await this.makeRequest('/llm/generate_tasks', {
+						project_id: projectId,
+						users,
+						phase_content: {
+							title: schedule.name,
+							description: schedule.description || '',
+							phase_start: new Date(schedule.startDate * 1000).toISOString().split('T')[0],
+							phase_end: new Date(schedule.endDate * 1000).toISOString().split('T')[0]
+						}
+					})
+
+					const tasks: any[] = Array.isArray(aiTasks) ? aiTasks : (aiTasks?.tasks ?? aiTasks?.data ?? [])
+					const savedTasks = []
+
+					for (let j = 0; j < tasks.length; j++) {
+						const t = tasks[j]
+						const taskStartTs = t.start_date ? Math.floor(new Date(t.start_date).getTime() / 1000) : schedule.startDate
+						const taskEndTs = t.end_date
+							? Math.floor(new Date(t.end_date).getTime() / 1000)
+							: t.due_date
+								? Math.floor(new Date(t.due_date).getTime() / 1000)
+								: schedule.endDate
+
+						const task = taskRepo.create({
+							title: t.title || t.name || `Task ${j + 1}`,
+							description: t.description || null,
+							status: TaskStatus.Pending,
+							type: this.mapTaskType(t.type),
+							priority: this.mapPriority(t.priority),
+							startDate: taskStartTs,
+							dueDate: taskEndTs,
+							duration: t.duration || null,
+							estimateEffort: t.estimate_effort || t.story_points || 0,
+							scheduleId: schedule.id,
+							projectId,
+							sortOrder: j
+						})
+						const saved = await taskRepo.save(task)
+						savedTasks.push(saved)
+					}
+
+					totalTasksCreated += savedTasks.length
+
+					sendEvent('task_done', {
+						scheduleIndex: i,
+						scheduleName: schedule.name,
+						tasksCreated: savedTasks.length,
+						tasks: savedTasks
+					})
+				} catch (err: any) {
+					sendEvent('task_error', {
+						scheduleIndex: i,
+						scheduleName: schedule.name,
+						error: err.message
+					})
+				}
+			}
+
+			// ── Step 4: Complete ──
+			sendEvent('complete', {
+				totalSchedules: savedSchedules.length,
+				totalTasks: totalTasksCreated
+			})
+		} catch (err: any) {
+			sendEvent('error', { message: err.message })
+		} finally {
+			res.end()
+		}
 	}
 
 	private mapTaskType(type?: string): TaskType {
