@@ -3,6 +3,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 import express from 'express'
 import cors from 'cors'
+import { createServer } from 'http'
 const app = express()
 
 import { router } from './routes/index.js'
@@ -13,6 +14,7 @@ app.use(express.urlencoded({ extended: true }))
 
 import morgan from 'morgan'
 import { AppDataSource } from './db/data-source.js'
+import { notificationWsService } from './services/notification/notification-ws.service.js'
 
 app.use(morgan('dev'))
 app.use(cors())
@@ -21,11 +23,13 @@ app.use(cors())
 AppDataSource.initialize()
 	.then(() => {
 		console.log('✅ DB connected')
+		const server = createServer(app)
+		notificationWsService.init(server)
 
 		// Initialize cron jobs
 		initSyncAICronJob()
 
-		app.listen(3000, () => console.log('🚀 Running on http://localhost:3000'))
+		server.listen(3000, () => console.log('🚀 Running on http://localhost:3000'))
 	})
 	.catch((err) => console.error('❌ DB init error:', err))
 

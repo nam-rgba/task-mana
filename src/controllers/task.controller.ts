@@ -9,15 +9,17 @@ const taskService = new TaskService()
 
 class TaskController {
 	create = async (req: Request, res: Response, next: NextFunction) => {
-		new CreatedResponse('Create task successfully!', 201, await taskService.createTask(req.body)).send(res)
+		const actorUserId = Number(req.headers['x-user-id']) || undefined
+		new CreatedResponse('Create task successfully!', 201, await taskService.createTask(req.body, actorUserId)).send(res)
 	}
 
 	update = async (req: Request, res: Response, next: NextFunction) => {
 		const id = Number(req.params.id)
+		const actorUserId = Number(req.headers['x-user-id']) || undefined
 		new SuccessResponse({
 			message: 'Update task successfully!',
 			statusCode: 201,
-			metadata: await taskService.updateTask(id, req.body)
+			metadata: await taskService.updateTask(id, req.body, actorUserId)
 		}).send(res)
 	}
 
@@ -26,6 +28,15 @@ class TaskController {
 			message: 'Get tasks successfully!',
 			statusCode: 200,
 			metadata: await taskService.getTasks(req.query as any)
+		}).send(res)
+	}
+
+	getOne = async (req: Request, res: Response, next: NextFunction) => {
+		const id = Number(req.params.id)
+		new SuccessResponse({
+			message: 'Get task successfully!',
+			statusCode: 200,
+			metadata: await taskService.getTaskById(id)
 		}).send(res)
 	}
 

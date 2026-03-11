@@ -2,6 +2,7 @@
 import { getTaskRepository, TaskQuery } from '~/repository/task.repository.js'
 import { Task } from '~/model/task.entity.js'
 import { TaskStatus, QCReviewStatus } from '~/types/task.type.js'
+import { notificationService } from '~/services/notification/notification.service.js'
 
 export class TaskService {
 	private repo = getTaskRepository()
@@ -15,12 +16,18 @@ export class TaskService {
 		return this.repo.findOne(id)
 	}
 
-	async createTask(data: Partial<Task>): Promise<Task> {
-		return this.repo.create(data)
+	async createTask(data: Partial<Task>, actorUserId?: number): Promise<Task> {
+		const task = await this.repo.create(data)
+		await this.notifyTaskStakeholders(task, 'created', actorUserId)
+		return task
 	}
 
-	async updateTask(id: number, data: Partial<Task>): Promise<Task | null> {
-		return this.repo.update(id, data)
+	async updateTask(id: number, data: Partial<Task>, actorUserId?: number): Promise<Task | null> {
+		const task = await this.repo.update(id, data)
+		if (!task) return null
+
+		await this.notifyTaskStakeholders(task, 'updated', actorUserId)
+		return task
 	}
 
 	async deleteTask(id: number): Promise<boolean> {
@@ -66,6 +73,30 @@ export class TaskService {
 			status: newStatus,
 			completedAt
 		})
+	}
+
+	private async notifyTaskStakeholders(task: Task, action: 'created' | 'updated', actorUserId?: number) {
+		if (task.assigneeId) {
+			await notificationService.notifyTaskParticipant({
+				recipientUserId: task.assigneeId,
+				taskId: task.id,
+				taskTitle: task.title,
+				action,
+				role: 'assignee',
+				actorUserId
+			})
+		}
+
+		if (task.reviewerId) {
+			await notificationService.notifyTaskParticipant({
+				recipientUserId: task.reviewerId,
+				taskId: task.id,
+				taskTitle: task.title,
+				action,
+				role: 'reviewer',
+				actorUserId
+			})
+		}
 	}
 }
 

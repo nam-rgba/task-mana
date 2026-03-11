@@ -107,6 +107,11 @@ DATABASE_URL=postgresql://root:passed@localhost:5432/taskmanager
 JWT_ACCESS_SECRET=your_access_secret
 JWT_REFRESH_SECRET=your_refresh_secret
 
+# Notification / Email
+FRONTEND_URL=http://localhost:5173
+SENDGRID_API_KEY=your_sendgrid_api_key
+SENDGRID_FROM_EMAIL=noreply@your-domain.com
+
 # Cloudinary (file uploads)
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
@@ -155,6 +160,12 @@ This spins up:
 # Stop and remove containers
 docker compose down
 ```
+
+## Realtime Notifications + Email
+
+Tài liệu tích hợp cho FE được tách riêng tại:
+
+- `docs/notification-api.md`
 
 ---
 

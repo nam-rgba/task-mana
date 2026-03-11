@@ -115,7 +115,16 @@ export const getTaskRepository = () => {
 	}
 
 	const findOne = async (id: number): Promise<Task | null> => {
-		return await repo.findOneBy({ id })
+		return await repo
+			.createQueryBuilder('task')
+			.leftJoinAndSelect('task.project', 'project')
+			.leftJoinAndSelect('task.schedule', 'schedule')
+			.leftJoin('task.assignee', 'assignee')
+			.addSelect(['assignee.id', 'assignee.name', 'assignee.email', 'assignee.avatar', 'assignee.position'])
+			.leftJoin('task.reviewer', 'reviewer')
+			.addSelect(['reviewer.id', 'reviewer.name', 'reviewer.email', 'reviewer.avatar', 'reviewer.position'])
+			.where('task.id = :id', { id })
+			.getOne()
 	}
 
 	const create = async (data: Partial<Task>): Promise<Task> => {
@@ -193,7 +202,7 @@ export const getTaskRepository = () => {
 
 	// Lấy tasks theo team - sử dụng Raw Query
 	const findAllByRawQuery = async (query: TaskQuery) => {
-		const { page = 1, limit = 10, teamId, assigneeId, qcId, status, priority, projectId } = query
+		const { page = 1, limit = 10, teamId, assigneeId, qcId, status, priority, projectId, dueDate } = query
 		const { skip: _skip, limit: _limit } = normalizePaging({ page, limit })
 
 		const params: any[] = [teamId]
@@ -239,6 +248,14 @@ export const getTaskRepository = () => {
 			queryString += ` AND t."projectId" = $${paramIndex}`
 			params.push(projectId)
 			paramIndex++
+		}
+
+		if (dueDate !== undefined) {
+			const start = dayjs.unix(Number(dueDate)).startOf('day').unix()
+			const end = dayjs.unix(Number(dueDate)).endOf('day').unix()
+			queryString += ` AND t."dueDate" BETWEEN $${paramIndex} AND $${paramIndex + 1}`
+			params.push(start, end)
+			paramIndex += 2
 		}
 
 		queryString += `
@@ -287,6 +304,14 @@ export const getTaskRepository = () => {
 			countQuery += ` AND t."projectId" = $${countParamIndex}`
 			countParams.push(projectId)
 			countParamIndex++
+		}
+
+		if (dueDate !== undefined) {
+			const start = dayjs.unix(Number(dueDate)).startOf('day').unix()
+			const end = dayjs.unix(Number(dueDate)).endOf('day').unix()
+			countQuery += ` AND t."dueDate" BETWEEN $${countParamIndex} AND $${countParamIndex + 1}`
+			countParams.push(start, end)
+			countParamIndex += 2
 		}
 
 		const [{ total }] = await AppDataSource.query(countQuery, countParams)

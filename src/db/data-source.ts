@@ -18,6 +18,8 @@ import { Schedule } from '~/model/schedule.entity.js'
 import { TaskDependency } from '~/model/task-dependency.entity.js'
 import { Milestone } from '~/model/milestone.entity.js'
 import { Document } from '~/model/document.entity.js'
+import { Notification } from '~/model/notification.entity.js'
+import { EmailLog } from '~/model/email-log.entity.js'
 
 export const AppDataSource = new DataSource({
 	type: 'postgres',
@@ -40,6 +42,8 @@ export const AppDataSource = new DataSource({
 		Schedule,
 		TaskDependency,
 		Milestone,
-		Document
+		Document,
+		Notification,
+		EmailLog
 	]
 })
