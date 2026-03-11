@@ -11,6 +11,7 @@ import { TeamMember } from '~/model/teamMember.entity.js'
 import { ScheduleStatus } from '~/model/enums/gantt.enum.js'
 import { TaskStatus, TaskPriority, TaskType } from '~/types/task.type.js'
 import { aiLogger } from './ai-logger.service.js'
+import { CloudinaryService } from '~/services/upload/cloudinary.service.js'
 
 class AiGenService {
 	private aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000/ai'
@@ -195,8 +196,19 @@ class AiGenService {
 		}
 
 		try {
-			// ── Step 1: Upload & generate phases from AI ──
-			sendEvent('phase_start', { message: 'Đang phân tích tài liệu...' })
+			// ── Step 1: Upload file to Cloudinary & generate phases from AI ──
+			sendEvent('phase_start', { message: 'Đang tải tài liệu lên và phân tích...' })
+
+			// Upload to Cloudinary first (while file still exists)
+			const { url: fileUrl } = await CloudinaryService.uploadImageFromLocal({
+				filePath,
+				folder: `projects/${projectId}/documents`,
+				resourceType: 'raw'
+			})
+
+			// Save useCaseUrl to project
+			const projectRepo = AppDataSource.getRepository(Project)
+			await projectRepo.update(projectId, { useCaseUrl: fileUrl })
 
 			const formData = new FormData()
 			formData.append('files', fs.createReadStream(filePath))
@@ -228,10 +240,12 @@ class AiGenService {
 
 			for (let i = 0; i < phases.length; i++) {
 				const phase = phases[i]
-				const startTs = phase.start_date
-					? Math.floor(new Date(phase.start_date).getTime() / 1000)
+				const rawStart = phase.start_date || phase.phase_start
+				const rawEnd = phase.end_date || phase.phase_end
+				const startTs = rawStart
+					? Math.floor(new Date(rawStart).getTime() / 1000)
 					: Math.floor(Date.now() / 1000)
-				const endTs = phase.end_date ? Math.floor(new Date(phase.end_date).getTime() / 1000) : startTs + 14 * 86400
+				const endTs = rawEnd ? Math.floor(new Date(rawEnd).getTime() / 1000) : startTs + 14 * 86400
 
 				const schedule = scheduleRepo.create({
 					name: phase.name || phase.title || `Phase ${i + 1}`,
