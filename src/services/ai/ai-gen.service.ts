@@ -242,9 +242,7 @@ class AiGenService {
 				const phase = phases[i]
 				const rawStart = phase.start_date || phase.phase_start
 				const rawEnd = phase.end_date || phase.phase_end
-				const startTs = rawStart
-					? Math.floor(new Date(rawStart).getTime() / 1000)
-					: Math.floor(Date.now() / 1000)
+				const startTs = rawStart ? Math.floor(new Date(rawStart).getTime() / 1000) : Math.floor(Date.now() / 1000)
 				const endTs = rawEnd ? Math.floor(new Date(rawEnd).getTime() / 1000) : startTs + 14 * 86400
 
 				const schedule = scheduleRepo.create({
@@ -344,6 +342,7 @@ class AiGenService {
 							estimateEffort: t.estimate_effort || t.story_points || 0,
 							scheduleId: schedule.id,
 							projectId,
+							assigneeId: t.assignee || null,
 							sortOrder: j
 						})
 						const saved = await taskRepo.save(task)
