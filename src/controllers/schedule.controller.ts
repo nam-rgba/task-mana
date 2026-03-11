@@ -8,6 +8,12 @@ class ScheduleController {
 		new OKResponse('Get schedules successfully!', 200, await scheduleService.getByProject(projectId)).send(res)
 	}
 
+	getOne = async (req: Request, res: Response, next: NextFunction) => {
+		const projectId = Number(req.params.projectId)
+		const id = Number(req.params.id)
+		new OKResponse('Get schedule successfully!', 200, await scheduleService.getOne(projectId, id)).send(res)
+	}
+
 	create = async (req: Request, res: Response, next: NextFunction) => {
 		const projectId = Number(req.params.projectId)
 		new CreatedResponse('Create schedule successfully!', 201, await scheduleService.create(projectId, req.body)).send(res)

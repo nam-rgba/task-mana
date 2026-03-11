@@ -22,11 +22,11 @@ export class Document extends AppBaseEntity {
 	type: DocumentType
 
 	@Column({ type: 'int' })
-	projectId: number
+	projectId?: number
 
 	@ManyToOne(() => Project, { onDelete: 'CASCADE' })
 	@JoinColumn({ name: 'projectId' })
-	project: Project
+	project?: Project
 
 	@Column({ type: 'int', nullable: true })
 	taskId?: number

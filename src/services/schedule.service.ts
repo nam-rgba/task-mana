@@ -16,6 +16,14 @@ class ScheduleService {
 		return await this.scheduleRepo.findByProject(projectId)
 	}
 
+	async getOne(projectId: number, id: number) {
+		const schedule = await this.scheduleRepo.findOneWithTasks(id)
+		if (!schedule || schedule.projectId !== projectId) {
+			throw new NotFoundError(`Schedule with id ${id} not found in project ${projectId}`)
+		}
+		return schedule
+	}
+
 	async create(projectId: number, data: CreateScheduleDto) {
 		const project = await this.projectRepo.findOneById(projectId)
 		if (!project) throw new NotFoundError(`Project with id ${projectId} not found`)

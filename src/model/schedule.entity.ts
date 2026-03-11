@@ -1,6 +1,7 @@
-import { Entity, Column, Index, OneToMany, ManyToOne, JoinColumn } from 'typeorm'
+import { Entity, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm'
 import { AppBaseEntity } from './base.entity.js'
 import { Project } from './project.entity.js'
+import { Task } from './task.entity.js'
 import { ScheduleStatus } from './enums/gantt.enum.js'
 
 @Entity('schedules')
@@ -32,4 +33,7 @@ export class Schedule extends AppBaseEntity {
 
 	@Column({ type: 'int', default: 0 })
 	sortOrder: number
+
+	@OneToMany(() => Task, (task) => task.schedule)
+	tasks: Task[]
 }

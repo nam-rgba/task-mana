@@ -1,4 +1,6 @@
 import { Project } from '~/model/project.entity.js'
+import { Task } from '~/model/task.entity.js'
+import { AppDataSource } from '~/db/data-source.js'
 import { getProjectRepository } from '~/repository/project.repository.js'
 import { getTeamRepository } from '~/repository/team.repository.js'
 import { NotFoundError } from '~/utils/error.reponse.js'
@@ -25,7 +27,35 @@ class ProjectService {
 		if (!project) {
 			throw new NotFoundError(`Project with id ${id} not found`)
 		}
-		return project
+
+		const taskRepo = AppDataSource.getRepository(Task)
+
+		const statusCounts: { status: string; count: string }[] = await taskRepo
+			.createQueryBuilder('task')
+			.select('task.status', 'status')
+			.addSelect('COUNT(*)', 'count')
+			.where('task.projectId = :id', { id })
+			.groupBy('task.status')
+			.getRawMany()
+
+		const done = Number(statusCounts.find((s) => s.status === 'DONE')?.count ?? 0)
+		const processing = Number(statusCounts.find((s) => s.status === 'PROCESSING')?.count ?? 0)
+		const waitReview = Number(statusCounts.find((s) => s.status === 'WAIT_REVIEW')?.count ?? 0)
+		const pending = Number(statusCounts.find((s) => s.status === 'PENDING')?.count ?? 0)
+		const totalTasks = done + processing + waitReview + pending
+		const completionPercent = totalTasks > 0 ? Math.round((done / totalTasks) * 100) : 0
+
+		return {
+			...project,
+			progress: {
+				totalTasks,
+				completionPercent,
+				done,
+				processing,
+				waitReview,
+				pending
+			}
+		}
 	}
 
 	async createProject(projectData: Partial<Project>) {

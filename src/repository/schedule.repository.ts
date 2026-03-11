@@ -9,6 +9,13 @@ export const getScheduleRepository = () => {
 		return await repo.findOneBy({ id })
 	}
 
+	const findOneWithTasks = async (id: number): Promise<Schedule | null> => {
+		return await repo.findOne({
+			where: { id },
+			relations: ['tasks', 'tasks.assignee']
+		})
+	}
+
 	const findByProject = async (projectId: number): Promise<Schedule[]> => {
 		return await repo.find({
 			where: { projectId },
@@ -48,6 +55,7 @@ export const getScheduleRepository = () => {
 
 	return {
 		findOneById,
+		findOneWithTasks,
 		findByProject,
 		create,
 		update,

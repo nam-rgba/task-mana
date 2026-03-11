@@ -8,6 +8,7 @@ const router = Router({ mergeParams: true })
 
 // /project/:projectId/schedules
 router.get('/', AsyncHandler(scheduleController.getAll))
+router.get('/:id', AsyncHandler(scheduleController.getOne))
 router.post('/', validate(CreateScheduleSchema), AsyncHandler(scheduleController.create))
 router.patch('/reorder', validate(ReorderScheduleSchema), AsyncHandler(scheduleController.reorder))
 router.patch('/:id', validate(UpdateScheduleSchema), AsyncHandler(scheduleController.update))
