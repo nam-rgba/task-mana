@@ -104,6 +104,14 @@ export class Task {
 
 	@Column({ type: 'jsonb', nullable: true, default: [] })
 	todos?: TodoItem[]
+
+	// Document IDs for task description documents
+	@Column('int', { array: true, nullable: true, default: [] })
+	descriptionDocumentIds?: number[]
+
+	// Document IDs for task result documents
+	@Column('int', { array: true, nullable: true, default: [] })
+	resultDocumentIds?: number[]
 }
 
 export interface TodoItem {

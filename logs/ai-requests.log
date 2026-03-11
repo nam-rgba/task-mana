@@ -104,3 +104,40 @@ Body:
   "error": "'NoneType' object has no attribute 'upper'"
 }
 ════════════════════════════════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════════════════════════════════
+[2026-03-11T16:27:25.023Z] REQUEST POST https://unblemishing-pregeological-ginger.ngrok-free.dev/ai/llm/suggest_tasks_for_today
+Body:
+{
+  "project_id": "10"
+}
+════════════════════════════════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════════════════════════════════
+[2026-03-11T16:27:26.127Z] RESPONSE POST https://unblemishing-pregeological-ginger.ngrok-free.dev/ai/llm/suggest_tasks_for_today
+Status: 200
+Duration: 1103ms
+Body:
+{
+  "error": "'NoneType' object has no attribute 'upper'"
+}
+════════════════════════════════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════════════════════════════════
+[2026-03-11T16:44:17.659Z] REQUEST POST https://unblemishing-pregeological-ginger.ngrok-free.dev/ai/llm/suggest_tasks_for_today
+Body:
+{
+  "project_id": "7"
+}
+════════════════════════════════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════════════════════════════════
+[2026-03-11T16:44:18.859Z] ERROR POST https://unblemishing-pregeological-ginger.ngrok-free.dev/ai/llm/suggest_tasks_for_today
+Status: 500
+Duration: 1199ms
+Body:
+{
+  "detail": "Internal server error during suggesting tasks for today."
+}
+Error: ERR_BAD_RESPONSE
+════════════════════════════════════════════════════════════════════════════════

@@ -107,6 +107,10 @@ export class Project extends AppBaseEntity {
 	@OneToMany(() => Schedule, (schedule) => schedule.project)
 	schedules: Awaited<Schedule[]>
 
+	// Document IDs for project-level documents
+	@Column('int', { array: true, nullable: true, default: [] })
+	documentIds?: number[]
+
 	// Custom config thêm (mở rộng kiểu Jira)
 	@Column({ type: 'jsonb', nullable: true })
 	settings?: {
