@@ -2,7 +2,6 @@ import { NextFunction, Request, Response } from 'express'
 import path from 'path'
 import { aiGenService } from '~/services/ai/ai-gen.service.js'
 import { projectService } from '~/services/project.service.js'
-import { teamService } from '~/services/team.service.js'
 import { CloudinaryService } from '~/services/upload/cloudinary.service.js'
 import { BadRequestError } from '~/utils/error.reponse.js'
 import { OKResponse, SuccessResponse } from '~/utils/success.response.js'
@@ -36,7 +35,6 @@ class ProjectController {
 	}
 
 	genProjectSchedule = async (req: Request, res: Response, next: NextFunction) => {
-		const teamId = Number(req.params.teamId)
 		const projectId = Number(req.params.projectId)
 		const file = req.file
 
@@ -59,19 +57,10 @@ class ProjectController {
 		// Lưu useCaseUrl vào project
 		await projectService.updateProject(projectId, { useCaseUrl: uploadResult.url })
 
-		// Lấy team detail kèm members
-		const team = await teamService.getTeamDetail({ id: teamId }, (req as any).userId)
-		const members = (team?.members || []).map((m: any) => ({
-			id: m.user?.id,
-			name: m.user?.name,
-			email: m.user?.email,
-			role: m.role
-		}))
-
 		return new OKResponse(
 			'AI generated project schedule successfully!',
 			200,
-			await aiGenService.generateProjectSchedule(file.path, members)
+			await aiGenService.generateProjectSchedule(file.path, projectId)
 		).send(res)
 	}
 }

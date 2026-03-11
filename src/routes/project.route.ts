@@ -11,7 +11,7 @@ router.post('/', AsyncHandler(projectController.create))
 router.patch('/:id', AsyncHandler(projectController.update))
 router.delete('/:id', AsyncHandler(projectController.deleteProject))
 router.post(
-	'/:teamId/gen-schedule/:projectId',
+	'/:projectId/gen-schedule',
 	upload.single('file'),
 	AsyncHandler(projectController.genProjectSchedule)
 )

@@ -3,6 +3,11 @@ import FormData from 'form-data'
 import fs from 'fs'
 import http from 'http'
 import https from 'https'
+import { AppDataSource } from '~/db/data-source.js'
+import { Schedule } from '~/model/schedule.entity.js'
+import { Task } from '~/model/task.entity.js'
+import { ScheduleStatus } from '~/model/enums/gantt.enum.js'
+import { TaskStatus, TaskPriority, TaskType } from '~/types/task.type.js'
 
 class AiGenService {
 	private aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000/ai'
@@ -113,17 +118,18 @@ class AiGenService {
 		return this.makeRequest('/llm/duplicate', body)
 	}
 
-	async generateProjectSchedule(filePath: string, members: any[]) {
+	async generateProjectSchedule(filePath: string, projectId: number) {
 		const formData = new FormData()
-		formData.append('file', fs.createReadStream(filePath))
-		formData.append('members', JSON.stringify(members))
+		formData.append('files', fs.createReadStream(filePath))
+		formData.append('project_id', projectId)
 
+		let aiPhases: any
 		try {
-			const res = await this.axiosInstance.post(`${this.aiServiceUrl}/llm/generate_tasks`, formData, {
+			const res = await this.axiosInstance.post(`${this.aiServiceUrl}/llm/generate_phases`, formData, {
 				headers: formData.getHeaders(),
-				timeout: 300_000 // 5 phút cho task nặng
+				timeout: 300_000
 			})
-			return res.data
+			aiPhases = res.data
 		} catch (error: any) {
 			if (error.code === 'ECONNRESET') {
 				throw new Error('Kết nối đến Python server bị đóng đột ngột. Kiểm tra server Python có đang chạy không.')
@@ -136,9 +142,67 @@ class AiGenService {
 			}
 			throw error
 		} finally {
-			// Xoá file tạm sau khi gửi xong
 			fs.unlink(filePath, () => {})
 		}
+
+		// Map AI phases → Schedule + Task entities và lưu DB
+		const scheduleRepo = AppDataSource.getRepository(Schedule)
+		const taskRepo = AppDataSource.getRepository(Task)
+
+		const phases: any[] = Array.isArray(aiPhases) ? aiPhases : (aiPhases?.phases ?? aiPhases?.data ?? [])
+		const savedSchedules = []
+
+		for (let i = 0; i < phases.length; i++) {
+			const phase = phases[i]
+
+			const startTs = phase.start_date
+				? Math.floor(new Date(phase.start_date).getTime() / 1000)
+				: Math.floor(Date.now() / 1000)
+			const endTs = phase.end_date ? Math.floor(new Date(phase.end_date).getTime() / 1000) : startTs + 14 * 86400
+
+			const schedule = scheduleRepo.create({
+				name: phase.name || phase.title || `Phase ${i + 1}`,
+				description: phase.description || null,
+				startDate: startTs,
+				endDate: endTs,
+				status: ScheduleStatus.PLANNED,
+				color: phase.color || '#6366f1',
+				projectId,
+				sortOrder: i
+			})
+			const savedSchedule = await scheduleRepo.save(schedule)
+
+			savedSchedules.push(savedSchedule)
+		}
+
+		return savedSchedules
+	}
+
+	private mapTaskType(type?: string): TaskType {
+		if (!type) return TaskType.Feature
+		const map: Record<string, TaskType> = {
+			feature: TaskType.Feature,
+			bug: TaskType.Bug,
+			improvement: TaskType.Improvement,
+			research: TaskType.Research,
+			documentation: TaskType.Documentation,
+			testing: TaskType.Testing,
+			deployment: TaskType.Deployment,
+			enhancement: TaskType.Enhancement,
+			maintenance: TaskType.Maintenance
+		}
+		return map[type.toLowerCase()] || TaskType.Feature
+	}
+
+	private mapPriority(priority?: string): TaskPriority {
+		if (!priority) return TaskPriority.Medium
+		const map: Record<string, TaskPriority> = {
+			low: TaskPriority.Low,
+			medium: TaskPriority.Medium,
+			high: TaskPriority.High,
+			urgent: TaskPriority.Urgent
+		}
+		return map[priority.toLowerCase()] || TaskPriority.Medium
 	}
 }
 
