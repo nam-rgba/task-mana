@@ -1,6 +1,7 @@
 import { User } from '~/model/user.entity.js'
 import { getUserRepository } from '~/repository/user.repository.js'
 import { getSubscriptionRepository } from '~/repository/subscription.repository.js'
+import { getSkillRepository } from '~/repository/skill.repository.js'
 import { BadRequestError } from '~/utils/error.reponse.js'
 
 const userRepo = getUserRepository()
@@ -15,7 +16,9 @@ const sanitizeSkills = (skills: unknown): string[] => {
 		throw new BadRequestError('skills can contain at most 20 items')
 	}
 
-	return skills.map((skill, index) => {
+	const dedupedByNormalized = new Map<string, string>()
+
+	skills.forEach((skill, index) => {
 		if (typeof skill !== 'string') {
 			throw new BadRequestError(`skills[${index}] must be a string`)
 		}
@@ -29,8 +32,10 @@ const sanitizeSkills = (skills: unknown): string[] => {
 			throw new BadRequestError(`skills[${index}] must be at most 20 characters`)
 		}
 
-		return normalized
+		dedupedByNormalized.set(normalized.toLowerCase(), normalized)
 	})
+
+	return Array.from(dedupedByNormalized.values())
 }
 
 export interface IGetAllUsersOptions {
@@ -87,12 +92,30 @@ export const createUser = async (data: {
 	})
 }
 
-export const updateUser = async (id: number, data: Partial<User>): Promise<User | null> => {
+export const updateUser = async (id: number, data: Partial<User>): Promise<(User & { skills: string[] }) | null> => {
+	const skillRepo = getSkillRepository()
+	let skills: string[] = []
+
 	if (data.skills !== undefined) {
-		data.skills = sanitizeSkills(data.skills)
+		skills = sanitizeSkills(data.skills)
+		// Sync skills to join table
+		await skillRepo.syncUserSkills(id, skills)
+		// Remove skills from data object since it's not a column anymore
+		const { skills: _, ...dataWithoutSkills } = data as any
+		data = dataWithoutSkills
 	}
 
-	return await userRepo.update(id, data)
+	const updated = await userRepo.update(id, data)
+
+	// Load skills from relation table back into response
+	if (updated) {
+		if (skills.length === 0) {
+			skills = await skillRepo.getUserSkills(updated.id)
+		}
+		return { ...updated, skills }
+	}
+
+	return null
 }
 
 export const getAllUsers = async ({ page = 1, limit = 10, query }: IGetAllUsersOptions) => {

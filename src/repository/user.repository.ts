@@ -5,6 +5,7 @@ import { AppDataSource } from '~/db/data-source.js'
 import { User } from '~/model/user.entity.js'
 import { BadRequestError, NotFoundError } from '~/utils/error.reponse.js'
 import { getTeamMemberRepository } from './team-member.repository.js'
+import { getSkillRepository } from './skill.repository.js'
 
 export interface IQuery {
 	page: number
@@ -109,7 +110,6 @@ export const getUserRepository = () => {
 				avatar: true,
 				position: true,
 				yearOfExperience: true,
-				skills: true,
 				discordUserId: true,
 				isEmailVerified: true,
 				password: type === 'AUTH' ? true : false
@@ -117,7 +117,11 @@ export const getUserRepository = () => {
 		})
 
 		const lastTeam = await teamMemberRepo.findLastByUserId(user?.id || 0)
-		return { ...user, lastTeamId: lastTeam?.teamId }
+
+		// Load skills from relation table
+		const skills = user?.id ? await getSkillRepository().getUserSkills(user.id) : []
+
+		return { ...user, skills, lastTeamId: lastTeam?.teamId }
 	}
 
 	const create = async (data: Partial<User>): Promise<User> => {

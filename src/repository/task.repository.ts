@@ -424,7 +424,14 @@ export const getTaskRepository = () => {
 					u.email,
 					u.avatar,
 					u.position,
-					u.skills,
+					COALESCE(
+						(
+							SELECT array_agg(us."skillName" ORDER BY us."skillName")
+							FROM user_skills us
+							WHERE us."userId" = u.id
+						),
+						ARRAY[]::varchar[]
+					) AS skills,
 					u."yearOfExperience" AS "yearOfExperience",
 					COUNT(t.id) AS "totalTasks",
 					COUNT(t.id) FILTER (

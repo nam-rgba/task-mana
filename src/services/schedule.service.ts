@@ -4,6 +4,8 @@ import { Task } from '~/model/task.entity.js'
 import { CreateScheduleDto, UpdateScheduleDto } from '~/model/dto/gantt.dto.js'
 import { getScheduleRepository } from '~/repository/schedule.repository.js'
 import { getProjectRepository } from '~/repository/project.repository.js'
+import { scheduleStatusService } from './schedule-status.service.js'
+import { TaskStatus } from '~/types/task.type.js'
 import { BadRequestError, NotFoundError } from '~/utils/error.reponse.js'
 
 class ScheduleService {
@@ -84,6 +86,10 @@ class ScheduleService {
 		}
 
 		await taskRepo.update({ id: In(taskIds) }, { scheduleId })
+
+		if (tasks.some((task) => task.status !== TaskStatus.Pending)) {
+			await scheduleStatusService.activateScheduleWhenTaskStarted(scheduleId)
+		}
 
 		return tasks.map((t) => ({ id: t.id, scheduleId }))
 	}

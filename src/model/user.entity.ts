@@ -16,6 +16,7 @@ import { Subscription } from './subscription.entity.js'
 import { Order } from './order.entity.js'
 import { AuthProvider } from './enums/auth-provider.enum.js'
 import { ApiKey } from './api-key.entity.js'
+import { UserSkill } from './user-skill.entity.js'
 
 @Entity('users')
 export class User {
@@ -41,8 +42,10 @@ export class User {
 	@Column({ type: 'float', nullable: false, default: 0 })
 	yearOfExperience: number
 
-	@Column('varchar', { array: true, nullable: false, default: '{}' })
-	skills: string[]
+	skills?: string[]
+
+	@OneToMany(() => UserSkill, (us) => us.user)
+	userSkills: Awaited<UserSkill[]>
 
 	// team, 1 user có thể ở trong nhiều team 1 lúc
 	@OneToMany(() => TeamMember, (tm) => tm.user)

@@ -38,7 +38,8 @@ export class DocumentService {
 		const uploadResult = await CloudinaryService.uploadImageFromLocal({
 			filePath: absolutePath,
 			folder: `documents/project-${data.projectId}`,
-			resourceType: isImage ? 'image' : 'raw'
+			resourceType: isImage ? 'image' : 'raw',
+			fileName: file.originalname
 		})
 
 		// Xóa file tạm sau khi upload

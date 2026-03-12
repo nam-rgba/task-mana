@@ -69,6 +69,41 @@ PUT /api/users/profile
 
 ---
 
+## 1.5) Lấy danh sách tất cả skills trong hệ thống
+
+API này trả về danh sách skill đã tồn tại trong hệ thống, dùng để suggest autocomplete khi cập nhật profile.
+
+### Endpoint
+
+```text
+GET /api/skills
+```
+
+### Headers
+
+Không yêu cầu, công khai
+
+### Response
+
+```json
+{
+	"message": "Get all skills successfully",
+	"code": 200,
+	"metadata": {
+		"skills": ["NodeJS", "PostgreSQL", "React", "TypeScript"],
+		"total": 4
+	}
+}
+```
+
+### FE notes
+
+- Dùng list này làm autocomplete suggestions khi user chỉnh sửa skills của mình.
+- Hệ thống tự tạo skill mới nếu user nhập skill chưa tồn tại khi update profile.
+- Nếu user nhập skill trùng (khác hoa thường), backend tự gộp và giữ 1 skill duy nhất.
+
+---
+
 ## 2) Team Performance Dashboard (không gọi AI)
 
 API này dùng để render dashboard trước. Không truyền `userId`, chỉ cần `teamId + fromAt + toAt`.

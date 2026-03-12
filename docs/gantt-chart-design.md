@@ -444,6 +444,37 @@ Logic render:
 }
 ```
 
+#### `PATCH /project/:projectId/schedules/:id`
+
+```json
+// Request — update trực tiếp schedule, gồm cả status
+{
+  "name": "Sprint 1 - Delivery",
+  "status": "ON_HOLD",
+  "color": "#ef4444"
+}
+
+// Response 200
+{
+  "id": 1,
+  "name": "Sprint 1 - Delivery",
+  "description": "Setup cơ bản, auth, DB",
+  "startDate": 1741564800,
+  "endDate": 1743465600,
+  "status": "ON_HOLD",
+  "color": "#ef4444",
+  "projectId": 5,
+  "sortOrder": 0
+}
+```
+
+**Rule hiện tại của backend cho `schedule.status`:**
+
+1. Tạo mới schedule luôn có status mặc định là `PLANNED`.
+2. FE có thể đổi status trực tiếp bằng `PATCH /project/:projectId/schedules/:id` với field `status`.
+3. Nếu schedule đang là `PLANNED` và có ít nhất 1 task trong schedule chuyển sang status khác `PENDING`, backend sẽ tự đổi schedule sang `ACTIVE`.
+4. Auto-update chỉ đẩy `PLANNED -> ACTIVE`, không tự ghi đè các status thủ công như `ON_HOLD` hoặc `COMPLETED`.
+
 #### `PATCH /project/:projectId/schedules/reorder`
 
 ```json
@@ -647,7 +678,64 @@ Client                              Server
   ▼  Tasks xuất hiện trong Sprint 1   ▼
 ```
 
-### 6.3. Drag & Drop Task (Auto-cascade)
+### 6.3. FE Implement: Schedule Status
+
+FE nên coi `schedule.status` là dữ liệu từ server, không tự suy luận cứng ở client. Có 2 luồng cập nhật cần hỗ trợ song song:
+
+1. **Manual update**: user đổi status trực tiếp từ UI.
+2. **Implicit update**: khi task trong schedule rời khỏi `PENDING`, backend có thể tự đẩy schedule sang `ACTIVE`.
+
+#### A. Manual status change từ FE
+
+Khi user chọn status mới trong dropdown hoặc context menu, gọi:
+
+```ts
+await api.patch(`/project/${projectId}/schedules/${scheduleId}`, {
+	status: 'ON_HOLD'
+})
+```
+
+Khuyến nghị UI:
+
+1. Disable nút trong lúc request đang pending.
+2. Sau khi request thành công, cập nhật local state bằng response từ server.
+3. Nếu đang dùng cache như React Query/SWR, invalidate `GET /project/:projectId/gantt` hoặc `GET /project/:projectId/schedules`.
+
+#### B. Implicit status change khi task đổi trạng thái
+
+Các action FE có thể kích hoạt rule ngầm này:
+
+1. `PATCH /task/:id` với payload có `status` khác `PENDING`
+2. `POST /task/:id/submit-qc`
+3. `POST /task/:id/qc-review`
+4. `POST /project/:projectId/schedules/:id/tasks/bulk-assign` nếu task được gán vào schedule đã ở status khác `PENDING`
+
+Ví dụ update task sang processing:
+
+```ts
+await api.patch(`/task/${taskId}`, {
+	status: 'PROCESSING'
+})
+```
+
+Sau các action trên, FE nên refresh lại schedule source-of-truth từ server vì response của task API không đảm bảo trả kèm schedule mới nhất.
+
+Khuyến nghị đơn giản nhất:
+
+```ts
+await api.patch(`/task/${taskId}`, { status: 'PROCESSING' })
+await queryClient.invalidateQueries({ queryKey: ['gantt', projectId] })
+await queryClient.invalidateQueries({ queryKey: ['schedules', projectId] })
+```
+
+#### C. Rule hiển thị ở UI
+
+1. Badge schedule hiển thị đúng 4 trạng thái: `PLANNED`, `ACTIVE`, `COMPLETED`, `ON_HOLD`.
+2. Không tự local-compute kiểu `if any task processing => ACTIVE` nếu chưa sync server, vì sẽ dễ lệch với trạng thái thủ công.
+3. Khi user vừa đổi status thủ công sang `ON_HOLD` hoặc `COMPLETED`, FE luôn ưu tiên render response trả về từ `PATCH /schedules/:id`.
+4. Sau khi task update xong, nếu fetch lại thấy schedule vẫn là `PLANNED`, FE không nên tự sửa vì backend đã là nguồn quyết định cuối cùng.
+
+### 6.4. Drag & Drop Task (Auto-cascade)
 
 ```
 Client                              Server
@@ -680,7 +768,7 @@ Client                              Server
   ▼  Re-render 4 task bars + arrows    ▼
 ```
 
-### 6.4. Add Dependency (Draw Arrow)
+### 6.5. Add Dependency (Draw Arrow)
 
 ```
 Client                              Server

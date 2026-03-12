@@ -183,7 +183,7 @@ const googleLogin = async (code: string) => {
 			isEmailVerified: true,
 			authProvider: AuthProvider.GOOGLE
 		} as any)
-		user = { ...newUser, lastTeamId: undefined }
+		user = { ...newUser, skills: [], lastTeamId: undefined }
 	} else {
 		if (!user.avatar && picture) {
 			await updateUser(user.id, { avatar: picture })
