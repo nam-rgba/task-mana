@@ -141,7 +141,7 @@ class AiGenService {
 		const selectedApiKey = await this.resolveGroqContext(context)
 		const headers = selectedApiKey?.decryptedKey
 			? {
-					x_api_key: selectedApiKey.decryptedKey
+					'x-api-key': selectedApiKey.decryptedKey
 				}
 			: undefined
 		const { startTime } = aiLogger.logRequest('POST', url, body, headers)
@@ -216,7 +216,7 @@ class AiGenService {
 			const res = await this.axiosInstance.post(`${this.aiServiceUrl}/llm/generate_phases`, formData, {
 				headers: {
 					...formData.getHeaders(),
-					...(selectedApiKey?.decryptedKey ? { x_api_key: selectedApiKey.decryptedKey } : {})
+					...(selectedApiKey?.decryptedKey ? { 'x-api-key': selectedApiKey.decryptedKey } : {})
 				},
 				timeout: 300_000
 			})
@@ -316,7 +316,7 @@ class AiGenService {
 			const selectedApiKey = await this.resolveGroqContext(context)
 			const phaseHeaders = {
 				...formData.getHeaders(),
-				...(selectedApiKey?.decryptedKey ? { x_api_key: selectedApiKey.decryptedKey } : {})
+				...(selectedApiKey?.decryptedKey ? { 'x-api-key': selectedApiKey.decryptedKey } : {})
 			}
 
 			let aiPhases: any
