@@ -1,9 +1,37 @@
 import { User } from '~/model/user.entity.js'
 import { getUserRepository } from '~/repository/user.repository.js'
 import { getSubscriptionRepository } from '~/repository/subscription.repository.js'
+import { BadRequestError } from '~/utils/error.reponse.js'
 
 const userRepo = getUserRepository()
 const subscriptionRepo = getSubscriptionRepository()
+
+const sanitizeSkills = (skills: unknown): string[] => {
+	if (!Array.isArray(skills)) {
+		throw new BadRequestError('skills must be an array of strings')
+	}
+
+	if (skills.length > 20) {
+		throw new BadRequestError('skills can contain at most 20 items')
+	}
+
+	return skills.map((skill, index) => {
+		if (typeof skill !== 'string') {
+			throw new BadRequestError(`skills[${index}] must be a string`)
+		}
+
+		const normalized = skill.trim()
+		if (!normalized) {
+			throw new BadRequestError(`skills[${index}] must not be empty`)
+		}
+
+		if (normalized.length > 20) {
+			throw new BadRequestError(`skills[${index}] must be at most 20 characters`)
+		}
+
+		return normalized
+	})
+}
 
 export interface IGetAllUsersOptions {
 	page?: number
@@ -60,6 +88,10 @@ export const createUser = async (data: {
 }
 
 export const updateUser = async (id: number, data: Partial<User>): Promise<User | null> => {
+	if (data.skills !== undefined) {
+		data.skills = sanitizeSkills(data.skills)
+	}
+
 	return await userRepo.update(id, data)
 }
 

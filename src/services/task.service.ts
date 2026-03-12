@@ -3,9 +3,14 @@ import { getTaskRepository, TaskQuery } from '~/repository/task.repository.js'
 import { Task } from '~/model/task.entity.js'
 import { TaskStatus, QCReviewStatus } from '~/types/task.type.js'
 import { notificationService } from '~/services/notification/notification.service.js'
+import { getTeamMemberRepository } from '~/repository/team-member.repository.js'
+import { AppDataSource } from '~/db/data-source.js'
+import { User } from '~/model/user.entity.js'
+import { BadRequestError, NotFoundError } from '~/utils/error.reponse.js'
 
 export class TaskService {
 	private repo = getTaskRepository()
+	private teamMemberRepo = getTeamMemberRepository()
 
 	async getTasks(query: TaskQuery) {
 		const { page, limit, ...queries } = query
@@ -73,6 +78,162 @@ export class TaskService {
 			status: newStatus,
 			completedAt
 		})
+	}
+
+	async buildPerformanceReviewPayload(params: { userId: number; teamId: number; fromAt: number; toAt: number }) {
+		const { userId, teamId, fromAt, toAt } = params
+
+		if (!Number.isInteger(userId) || userId <= 0) {
+			throw new BadRequestError('userId must be a positive integer')
+		}
+
+		if (!Number.isInteger(teamId) || teamId <= 0) {
+			throw new BadRequestError('teamId must be a positive integer')
+		}
+
+		if (!Number.isInteger(fromAt) || fromAt <= 0 || !Number.isInteger(toAt) || toAt <= 0) {
+			throw new BadRequestError('fromAt and toAt must be unix timestamp in seconds')
+		}
+
+		if (fromAt > toAt) {
+			throw new BadRequestError('fromAt must be less than or equal to toAt')
+		}
+
+		const membership = await this.teamMemberRepo.findOneByUserAndTeamId(userId, teamId)
+		if (!membership || !membership.isActive) {
+			throw new BadRequestError('User is not an active member of this team')
+		}
+
+		const user = await AppDataSource.getRepository(User).findOne({
+			where: { id: userId },
+			select: ['id', 'name', 'email', 'position', 'yearOfExperience', 'skills']
+		})
+
+		if (!user) {
+			throw new NotFoundError('User not found')
+		}
+
+		const tasks = await this.repo.findTasksForPerformanceReview(userId, teamId, fromAt, toAt)
+
+		return {
+			context: {
+				user: {
+					id: user.id,
+					name: user.name,
+					email: user.email,
+					position: user.position || null,
+					yearOfExperience: user.yearOfExperience ?? 0,
+					skills: Array.isArray(user.skills) ? user.skills : []
+				},
+
+				tasks: tasks.map((task) => {
+					const completionTimeSeconds =
+						task.completedAt && task.startDate && task.completedAt >= task.startDate
+							? task.completedAt - task.startDate
+							: null
+
+					return {
+						id: task.id,
+						title: task.title,
+						description: task.description || '',
+						difficulty: task.priority,
+						status: task.status,
+						estimateEffort: task.estimateEffort,
+						actualEffort: task.actualEffort,
+						startDate: task.startDate,
+						dueDate: task.dueDate,
+						completedAt: task.completedAt,
+						completionTimeSeconds,
+						comments: (task.comments || []).map((comment) => ({
+							authorName: comment.authorName,
+							content: comment.content
+						}))
+					}
+				})
+			}
+		}
+	}
+
+	async getTeamPerformanceDashboard(params: { teamId: number; fromAt: number; toAt: number }) {
+		const { teamId, fromAt, toAt } = params
+
+		if (!Number.isInteger(teamId) || teamId <= 0) {
+			throw new BadRequestError('teamId must be a positive integer')
+		}
+
+		if (!Number.isInteger(fromAt) || fromAt <= 0 || !Number.isInteger(toAt) || toAt <= 0) {
+			throw new BadRequestError('fromAt and toAt must be unix timestamp in seconds')
+		}
+
+		if (fromAt > toAt) {
+			throw new BadRequestError('fromAt must be less than or equal to toAt')
+		}
+
+		const rows = await this.repo.findTeamPerformanceDashboard(teamId, fromAt, toAt)
+
+		const users = rows.map((row) => {
+			const totalTasks = Number(row.totalTasks) || 0
+			const completedTasks = Number(row.completedTasks) || 0
+			const onTimeCompletedTasks = Number(row.onTimeCompletedTasks) || 0
+
+			const completionRate = totalTasks > 0 ? Number(((completedTasks / totalTasks) * 100).toFixed(2)) : 0
+			const onTimeCompletionRate =
+				completedTasks > 0 ? Number(((onTimeCompletedTasks / completedTasks) * 100).toFixed(2)) : 0
+
+			return {
+				user: {
+					id: row.userId,
+					name: row.name,
+					email: row.email,
+					avatar: row.avatar,
+					position: row.position,
+					skills: Array.isArray(row.skills) ? row.skills : [],
+					yearOfExperience: Number(row.yearOfExperience) || 0
+				},
+				metrics: {
+					totalTasks,
+					completedTasks,
+					onTimeCompletedTasks,
+					completionRate,
+					onTimeCompletionRate,
+					totalStoryPoints: Number(row.totalStoryPoints) || 0,
+					storyPointsAchieved: Number(row.storyPointsAchieved) || 0
+				}
+			}
+		})
+
+		const totals = users.reduce(
+			(acc, item) => {
+				acc.totalTasks += item.metrics.totalTasks
+				acc.completedTasks += item.metrics.completedTasks
+				acc.onTimeCompletedTasks += item.metrics.onTimeCompletedTasks
+				acc.totalStoryPoints += item.metrics.totalStoryPoints
+				acc.storyPointsAchieved += item.metrics.storyPointsAchieved
+				return acc
+			},
+			{
+				totalTasks: 0,
+				completedTasks: 0,
+				onTimeCompletedTasks: 0,
+				totalStoryPoints: 0,
+				storyPointsAchieved: 0
+			}
+		)
+
+		return {
+			period: { fromAt, toAt },
+			teamId,
+			totals: {
+				...totals,
+				completionRate:
+					totals.totalTasks > 0 ? Number(((totals.completedTasks / totals.totalTasks) * 100).toFixed(2)) : 0,
+				onTimeCompletionRate:
+					totals.completedTasks > 0
+						? Number(((totals.onTimeCompletedTasks / totals.completedTasks) * 100).toFixed(2))
+						: 0
+			},
+			users
+		}
 	}
 
 	private async notifyTaskStakeholders(task: Task, action: 'created' | 'updated', actorUserId?: number) {

@@ -109,6 +109,7 @@ export const getUserRepository = () => {
 				avatar: true,
 				position: true,
 				yearOfExperience: true,
+				skills: true,
 				discordUserId: true,
 				isEmailVerified: true,
 				password: type === 'AUTH' ? true : false

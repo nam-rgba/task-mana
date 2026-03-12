@@ -7,7 +7,8 @@ export enum RequestScope {
 	TASK4SCHEDULED = 'task-scheduled',
 	TASK = 'task',
 	STORYPOINT = 'storypoint',
-	ASSIGN = 'assign'
+	ASSIGN = 'assign',
+	PERFORMANCE = 'performance'
 }
 
 function toNullableNumber(value: unknown): number | null {

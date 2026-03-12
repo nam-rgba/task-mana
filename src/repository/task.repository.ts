@@ -30,6 +30,43 @@ export interface TaskQuery {
 	teamId?: number
 }
 
+export interface PerformanceReviewTaskComment {
+	id: number
+	authorId: number
+	authorName: string | null
+	content: string
+	createdAt: string
+}
+
+export interface PerformanceReviewTaskRow {
+	id: number
+	title: string
+	description: string | null
+	priority: TaskPriority | null
+	status: TaskStatus
+	estimateEffort: number
+	actualEffort: number
+	startDate: number | null
+	dueDate: number | null
+	completedAt: number | null
+	comments: PerformanceReviewTaskComment[]
+}
+
+export interface TeamPerformanceDashboardRow {
+	userId: number
+	name: string
+	email: string
+	avatar: string | null
+	position: string | null
+	skills: string[] | null
+	yearOfExperience: number
+	totalTasks: string
+	completedTasks: string
+	onTimeCompletedTasks: string
+	totalStoryPoints: string
+	storyPointsAchieved: string
+}
+
 const normalizePaging = ({ page, limit, skip }: IQuery) => {
 	let _limit = Number(limit) || 10
 	if (_limit < 1) _limit = 10
@@ -322,5 +359,126 @@ export const getTaskRepository = () => {
 		return { tasks, page: { total: Number(total), currentPage, pages } }
 	}
 
-	return { findAll, findOne, create, update, remove, findAllByQueryBuilder, findAllByRawQuery }
+	const findTasksForPerformanceReview = async (
+		userId: number,
+		teamId: number,
+		fromAt: number,
+		toAt: number
+	): Promise<PerformanceReviewTaskRow[]> => {
+		const tasks = await AppDataSource.query(
+			`
+				SELECT
+					t.id,
+					t.title,
+					t.description,
+					t.priority,
+					t.status,
+					t."estimateEffort" AS "estimateEffort",
+					t."actualEffort" AS "actualEffort",
+					t."startDate" AS "startDate",
+					t."dueDate" AS "dueDate",
+					t."completedAt" AS "completedAt",
+					COALESCE(
+						json_agg(
+							json_build_object(
+								'id', tc.id,
+								'authorId', tc."authorId",
+								'authorName', u.name,
+								'content', tc.content,
+								'createdAt', tc."createdAt"
+							)
+						) FILTER (WHERE tc.id IS NOT NULL AND tc.content IS NOT NULL AND btrim(tc.content) <> ''),
+						'[]'::json
+					) AS comments
+				FROM tasks t
+				INNER JOIN projects p ON p.id = t."projectId"
+				LEFT JOIN task_comments tc ON tc."taskId" = t.id
+				LEFT JOIN users u ON u.id = tc."authorId"
+				WHERE p."teamId" = $1
+					AND t."assigneeId" = $2
+					AND (
+						(t."startDate" IS NOT NULL AND t."startDate" BETWEEN $3 AND $4)
+						OR (t."dueDate" IS NOT NULL AND t."dueDate" BETWEEN $3 AND $4)
+						OR (t."completedAt" IS NOT NULL AND t."completedAt" BETWEEN $3 AND $4)
+						OR (t."startDate" IS NOT NULL AND t."dueDate" IS NOT NULL AND t."startDate" <= $4 AND t."dueDate" >= $3)
+					)
+				GROUP BY t.id
+				ORDER BY COALESCE(t."completedAt", t."dueDate", t."startDate") ASC NULLS LAST, t."created_at" ASC
+			`,
+			[teamId, userId, fromAt, toAt]
+		)
+
+		return tasks as PerformanceReviewTaskRow[]
+	}
+
+	const findTeamPerformanceDashboard = async (
+		teamId: number,
+		fromAt: number,
+		toAt: number
+	): Promise<TeamPerformanceDashboardRow[]> => {
+		const rows = await AppDataSource.query(
+			`
+				SELECT
+					u.id AS "userId",
+					u.name,
+					u.email,
+					u.avatar,
+					u.position,
+					u.skills,
+					u."yearOfExperience" AS "yearOfExperience",
+					COUNT(t.id) AS "totalTasks",
+					COUNT(t.id) FILTER (
+						WHERE t.status = '${TaskStatus.Done}' OR t."completedAt" IS NOT NULL
+					) AS "completedTasks",
+					COUNT(t.id) FILTER (
+						WHERE (t.status = '${TaskStatus.Done}' OR t."completedAt" IS NOT NULL)
+						AND t."completedAt" IS NOT NULL
+						AND t."dueDate" IS NOT NULL
+						AND t."completedAt" <= t."dueDate"
+					) AS "onTimeCompletedTasks",
+					COALESCE(SUM(t."estimateEffort"), 0) AS "totalStoryPoints",
+					COALESCE(
+						SUM(t."estimateEffort") FILTER (
+							WHERE t.status = '${TaskStatus.Done}' OR t."completedAt" IS NOT NULL
+						),
+						0
+					) AS "storyPointsAchieved"
+				FROM team_members tm
+				INNER JOIN users u ON u.id = tm."userId"
+				LEFT JOIN tasks t ON t."assigneeId" = u.id
+				LEFT JOIN projects p ON p.id = t."projectId" AND p."teamId" = $1
+				WHERE tm."teamId" = $1
+					AND tm."isActive" = true
+					AND (
+						t.id IS NULL
+						OR (
+							p.id IS NOT NULL
+							AND (
+								(t."startDate" IS NOT NULL AND t."startDate" BETWEEN $2 AND $3)
+								OR (t."dueDate" IS NOT NULL AND t."dueDate" BETWEEN $2 AND $3)
+								OR (t."completedAt" IS NOT NULL AND t."completedAt" BETWEEN $2 AND $3)
+								OR (t."startDate" IS NOT NULL AND t."dueDate" IS NOT NULL AND t."startDate" <= $3 AND t."dueDate" >= $2)
+							)
+						)
+					)
+				GROUP BY u.id
+				ORDER BY u.name ASC, u.id ASC
+			`,
+			[teamId, fromAt, toAt]
+		)
+
+		return rows as TeamPerformanceDashboardRow[]
+	}
+
+	return {
+		findAll,
+		findOne,
+		create,
+		update,
+		remove,
+		findAllByQueryBuilder,
+		findAllByRawQuery,
+		findTasksForPerformanceReview,
+		findTeamPerformanceDashboard
+	}
 }

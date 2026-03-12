@@ -7,6 +7,7 @@ import { Project } from '~/model/project.entity.js'
 import { TaskService } from '~/services/task.service.js'
 import { taskCommentService } from '~/services/task-comment.service.js'
 import { CreatedResponse, SuccessResponse } from '~/utils/success.response.js'
+import { BadRequestError } from '~/utils/error.reponse.js'
 
 const taskService = new TaskService()
 
@@ -177,6 +178,62 @@ class TaskController {
 					projectId,
 					teamId
 				}
+			})
+		}).send(res)
+	}
+
+	reviewPerformance = async (req: Request, res: Response, next: NextFunction) => {
+		const actorUserId = Number(req.headers['x-user-id'])
+		if (!Number.isInteger(actorUserId) || actorUserId <= 0) {
+			throw new BadRequestError('x-user-id header is required to review performance')
+		}
+
+		const userId = Number(req.body?.userId)
+		const teamId = Number(req.body?.teamId)
+		const fromAt = Number(req.body?.fromAt)
+		const toAt = Number(req.body?.toAt)
+
+		const payload = await taskService.buildPerformanceReviewPayload({
+			userId,
+			teamId,
+			fromAt,
+			toAt
+		})
+
+		const review = await aiGenService.reviewPerformance(payload, {
+			userId: actorUserId,
+			requestType: 'chat',
+			metadata: {
+				targetUserId: userId,
+				teamId,
+				fromAt,
+				toAt,
+				taskCount: payload.context.tasks.length
+			}
+		})
+
+		new SuccessResponse({
+			message: 'AI reviewed performance successfully!',
+			statusCode: 200,
+			metadata: {
+				review,
+				sourceData: payload
+			}
+		}).send(res)
+	}
+
+	teamPerformanceDashboard = async (req: Request, res: Response, next: NextFunction) => {
+		const teamId = Number(req.body?.teamId)
+		const fromAt = Number(req.body?.fromAt)
+		const toAt = Number(req.body?.toAt)
+
+		new SuccessResponse({
+			message: 'Get team performance dashboard successfully!',
+			statusCode: 200,
+			metadata: await taskService.getTeamPerformanceDashboard({
+				teamId,
+				fromAt,
+				toAt
 			})
 		}).send(res)
 	}

@@ -205,6 +205,13 @@ class AiGenService {
 		return this.makeRequest('/llm/duplicate', body, RequestScope.TASK, { requestType: 'chat', ...context })
 	}
 
+	async reviewPerformance(body: any, context?: AiRequestContext) {
+		return this.makeRequest('/llm/review_performance', body, RequestScope.PERFORMANCE, {
+			requestType: 'chat',
+			...context
+		})
+	}
+
 	async generateProjectSchedule(filePath: string, projectId: number, context?: AiRequestContext) {
 		const formData = new FormData()
 		formData.append('files', fs.createReadStream(filePath))
@@ -539,6 +546,8 @@ class AiGenService {
 		}
 		return map[priority.toLowerCase()] || TaskPriority.Medium
 	}
+
+	// logic for review user perfomance
 }
 
 export const aiGenService = new AiGenService()

@@ -41,6 +41,9 @@ export class User {
 	@Column({ type: 'float', nullable: false, default: 0 })
 	yearOfExperience: number
 
+	@Column('varchar', { array: true, nullable: false, default: '{}' })
+	skills: string[]
+
 	// team, 1 user có thể ở trong nhiều team 1 lúc
 	@OneToMany(() => TeamMember, (tm) => tm.user)
 	teamMemberships: Awaited<TeamMember[]>
