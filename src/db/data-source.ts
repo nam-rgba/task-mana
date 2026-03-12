@@ -22,6 +22,7 @@ import { Notification } from '~/model/notification.entity.js'
 import { EmailLog } from '~/model/email-log.entity.js'
 import { ApiKey } from '~/model/api-key.entity.js'
 import { Usage } from '~/model/usage.entity.js'
+import { TaskComment } from '~/model/task-comment.entity.js'
 
 export const AppDataSource = new DataSource({
 	type: 'postgres',
@@ -48,6 +49,7 @@ export const AppDataSource = new DataSource({
 		Notification,
 		EmailLog,
 		ApiKey,
-		Usage
+		Usage,
+		TaskComment
 	]
 })

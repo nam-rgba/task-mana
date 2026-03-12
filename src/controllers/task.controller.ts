@@ -5,6 +5,7 @@ import { AppDataSource } from '~/db/data-source.js'
 import { Project } from '~/model/project.entity.js'
 
 import { TaskService } from '~/services/task.service.js'
+import { taskCommentService } from '~/services/task-comment.service.js'
 import { CreatedResponse, SuccessResponse } from '~/utils/success.response.js'
 
 const taskService = new TaskService()
@@ -177,6 +178,34 @@ class TaskController {
 					teamId
 				}
 			})
+		}).send(res)
+	}
+
+	createComment = async (req: Request, res: Response, next: NextFunction) => {
+		const taskId = Number(req.params.id)
+		const authorId = Number(req.headers['x-user-id']) || undefined
+
+		new CreatedResponse(
+			'Create task comment successfully!',
+			201,
+			await taskCommentService.createTaskComment(
+				taskId,
+				{
+					content: req.body?.content,
+					authorId
+				},
+				(req as Request & { file?: Express.Multer.File }).file
+			)
+		).send(res)
+	}
+
+	getComments = async (req: Request, res: Response, next: NextFunction) => {
+		const taskId = Number(req.params.id)
+
+		new SuccessResponse({
+			message: 'Get task comments successfully!',
+			statusCode: 200,
+			metadata: await taskCommentService.getTaskComments(taskId)
 		}).send(res)
 	}
 }

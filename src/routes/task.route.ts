@@ -1,6 +1,7 @@
 // src/routes/task.routes.ts
 import { Router } from 'express'
 import ctrl from '~/controllers/task.controller.js'
+import { upload } from '~/config/multer.config.js'
 import AsyncHandler from '~/utils/async-handler.js'
 
 const router = Router()
@@ -17,5 +18,7 @@ router.get('/:id', AsyncHandler(ctrl.getOne))
 router.post('/suggest-developer', AsyncHandler(ctrl.suggestDev))
 router.post('/estimate-sp', AsyncHandler(ctrl.estimateSP))
 router.post('/check-duplicate', AsyncHandler(ctrl.checkDuplicateTask))
+router.post('/:id/comments', upload.single('attachment'), AsyncHandler(ctrl.createComment))
+router.get('/:id/comments', AsyncHandler(ctrl.getComments))
 
 export { router as taskRouter }

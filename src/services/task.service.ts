@@ -76,7 +76,8 @@ export class TaskService {
 	}
 
 	private async notifyTaskStakeholders(task: Task, action: 'created' | 'updated', actorUserId?: number) {
-		if (task.assigneeId) {
+		// Don't notify the actor themselves
+		if (task.assigneeId && task.assigneeId !== actorUserId) {
 			await notificationService.notifyTaskParticipant({
 				recipientUserId: task.assigneeId,
 				taskId: task.id,
@@ -87,7 +88,7 @@ export class TaskService {
 			})
 		}
 
-		if (task.reviewerId) {
+		if (task.reviewerId && task.reviewerId !== actorUserId) {
 			await notificationService.notifyTaskParticipant({
 				recipientUserId: task.reviewerId,
 				taskId: task.id,

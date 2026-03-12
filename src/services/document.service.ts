@@ -18,7 +18,12 @@ export class DocumentService {
 		data: { type: DocumentType; projectId: number; taskId?: number; uploadedById?: number }
 	): Promise<Document> {
 		// Task documents phải có taskId
-		if ((data.type === DocumentType.TASK_DESCRIPTION || data.type === DocumentType.TASK_RESULT) && !data.taskId) {
+		if (
+			(data.type === DocumentType.TASK_DESCRIPTION ||
+				data.type === DocumentType.TASK_RESULT ||
+				data.type === DocumentType.COMMENT) &&
+			!data.taskId
+		) {
 			throw new BadRequestError('taskId is required for task documents')
 		}
 

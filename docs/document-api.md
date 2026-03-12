@@ -11,6 +11,7 @@ Tính năng quản lý tài liệu (**Document**) cho phép đính kèm file và
 | `PROJECT`          | Project  | Tài liệu tổng quan của project           |
 | `TASK_DESCRIPTION` | Task     | Tài liệu mô tả task (đầu vào)            |
 | `TASK_RESULT`      | Task     | Tài liệu kết quả thực hiện task (đầu ra) |
+| `COMMENT`          | Task     | File đính kèm cho comment của task       |
 
 ---
 
@@ -20,19 +21,19 @@ Tính năng quản lý tài liệu (**Document**) cho phép đính kèm file và
 
 Tài liệu được lưu trong bảng `documents` với các trường:
 
-| Trường         | Kiểu     | Bắt buộc | Mô tả                                            |
-| -------------- | -------- | -------- | ------------------------------------------------ |
-| `id`           | `number` | ✅       | Primary key                                      |
-| `name`         | `string` | ✅       | Tên file gốc                                     |
-| `url`          | `string` | ✅       | URL Cloudinary                                   |
-| `mimeType`     | `string` | ❌       | MIME type của file                               |
-| `size`         | `number` | ❌       | Kích thước file (byte)                           |
-| `type`         | `enum`   | ✅       | `PROJECT` \| `TASK_DESCRIPTION` \| `TASK_RESULT` |
-| `projectId`    | `number` | ✅       | Project chứa document này                        |
-| `taskId`       | `number` | ❌       | Task (chỉ khi type là task)                      |
-| `uploadedById` | `number` | ❌       | User ID người upload                             |
-| `createdAt`    | `Date`   | ✅       | Timestamp tạo                                    |
-| `updatedAt`    | `Date`   | ✅       | Timestamp cập nhật                               |
+| Trường         | Kiểu     | Bắt buộc | Mô tả                                                         |
+| -------------- | -------- | -------- | ------------------------------------------------------------- |
+| `id`           | `number` | ✅       | Primary key                                                   |
+| `name`         | `string` | ✅       | Tên file gốc                                                  |
+| `url`          | `string` | ✅       | URL Cloudinary                                                |
+| `mimeType`     | `string` | ❌       | MIME type của file                                            |
+| `size`         | `number` | ❌       | Kích thước file (byte)                                        |
+| `type`         | `enum`   | ✅       | `PROJECT` \| `TASK_DESCRIPTION` \| `TASK_RESULT` \| `COMMENT` |
+| `projectId`    | `number` | ✅       | Project chứa document này                                     |
+| `taskId`       | `number` | ❌       | Task (chỉ khi type là task)                                   |
+| `uploadedById` | `number` | ❌       | User ID người upload                                          |
+| `createdAt`    | `Date`   | ✅       | Timestamp tạo                                                 |
+| `updatedAt`    | `Date`   | ✅       | Timestamp cập nhật                                            |
 
 ### Project Entity — mở rộng
 
@@ -63,7 +64,8 @@ resultDocumentIds?: number[]  // IDs tài liệu TASK_RESULT
 export enum DocumentType {
 	PROJECT = 'PROJECT',
 	TASK_DESCRIPTION = 'TASK_DESCRIPTION',
-	TASK_RESULT = 'TASK_RESULT'
+	TASK_RESULT = 'TASK_RESULT',
+	COMMENT = 'COMMENT'
 }
 
 export interface Document {
@@ -98,17 +100,17 @@ Content-Type: multipart/form-data
 
 **Form fields:**
 
-| Field       | Type          | Bắt buộc           | Mô tả                                            |
-| ----------- | ------------- | ------------------ | ------------------------------------------------ |
-| `file`      | File          | ✅                 | File cần upload (PDF, Word, Excel, ảnh...)       |
-| `type`      | string (enum) | ✅                 | `PROJECT` \| `TASK_DESCRIPTION` \| `TASK_RESULT` |
-| `projectId` | number        | ✅                 | ID của project                                   |
-| `taskId`    | number        | Khi `type` là task | ID của task                                      |
+| Field       | Type          | Bắt buộc           | Mô tả                                                         |
+| ----------- | ------------- | ------------------ | ------------------------------------------------------------- |
+| `file`      | File          | ✅                 | File cần upload (PDF, Word, Excel, ảnh...)                    |
+| `type`      | string (enum) | ✅                 | `PROJECT` \| `TASK_DESCRIPTION` \| `TASK_RESULT` \| `COMMENT` |
+| `projectId` | number        | ✅                 | ID của project                                                |
+| `taskId`    | number        | Khi `type` là task | ID của task                                                   |
 
 **Quy tắc validation:**
 
 - `type = PROJECT` → **không được** truyền `taskId`
-- `type = TASK_DESCRIPTION` hoặc `TASK_RESULT` → **phải** truyền `taskId`
+- `type = TASK_DESCRIPTION`, `TASK_RESULT` hoặc `COMMENT` → **phải** truyền `taskId`
 
 **Response `201`:**
 
