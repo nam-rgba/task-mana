@@ -1,12 +1,11 @@
 import axios from 'axios'
 import crypto from 'crypto'
 import { AppDataSource } from '~/db/data-source.js'
+import { ApiProvider, Geminimodelname, Groqmodelname } from '~/model/api-key.entity.js'
 import { User } from '~/model/user.entity.js'
 import { getApiKeyRepository } from '~/repository/api-key.repository.js'
 import { getUsageRepository } from '~/repository/usage.repository.js'
 import { BadRequestError, NotFoundError } from '~/utils/error.reponse.js'
-
-type Provider = 'groq'
 
 const ALGORITHM = 'aes-256-gcm'
 
@@ -63,15 +62,15 @@ class ApiKeyService {
 		}
 	}
 
-	async createApiKey(userId: number, payload: { name: string; key: string; provider?: Provider }) {
+	async createApiKey(
+		userId: number,
+		payload: { name: string; key: string; provider?: ApiProvider; modelname?: Groqmodelname | Geminimodelname }
+	) {
 		const name = payload.name?.trim()
 		const rawKey = payload.key?.trim()
 
 		if (!name) throw new BadRequestError('Name is required')
 		if (!rawKey) throw new BadRequestError('API key is required')
-		if (payload.provider && payload.provider !== 'groq') {
-			throw new BadRequestError('Only groq provider is supported')
-		}
 
 		await this.validateGroqApiKey(rawKey)
 
@@ -80,6 +79,7 @@ class ApiKeyService {
 			key: encryptValue(rawKey),
 			provider: payload.provider || 'groq',
 			isActive: true,
+			modelname: payload.modelname,
 			userId
 		})
 
@@ -87,6 +87,7 @@ class ApiKeyService {
 			id: created.id,
 			name: created.name,
 			provider: created.provider,
+			modelname: created.modelname,
 			isActive: created.isActive,
 			userId: created.userId,
 			createdAt: created.createdAt
@@ -97,10 +98,13 @@ class ApiKeyService {
 		const user = await this.userRepo.findOne({ where: { id: userId }, select: ['id', 'selectedApiKeyId'] })
 		const rows = await this.apiKeyRepo.findByUserIdWithUsage(userId)
 
+		console.log('rowssss: ', rows)
+
 		return rows.map((row: any) => ({
 			id: Number(row.id),
 			name: row.name,
 			provider: row.provider,
+			modelname: row.modelname,
 			isActive: row.isActive,
 			userId: Number(row.userId),
 			createdAt: row.createdAt,
@@ -137,6 +141,7 @@ class ApiKeyService {
 			id: updated.id,
 			name: updated.name,
 			provider: updated.provider,
+			modelname: updated.modelname,
 			isActive: updated.isActive,
 			userId: updated.userId,
 			createdAt: updated.createdAt
@@ -195,7 +200,7 @@ class ApiKeyService {
 		}
 	}
 
-	async resolveSelectedApiKeyForUser(userId: number): Promise<{ id: number; decryptedKey: string } | null> {
+	async resolveSelectedApiKeyForUser(userId: number): Promise<any | null> {
 		const user = await this.userRepo.findOne({
 			where: { id: userId },
 			select: ['id', 'selectedApiKeyId']
@@ -204,11 +209,14 @@ class ApiKeyService {
 		if (!user?.selectedApiKeyId) return null
 
 		const apiKey = await this.apiKeyRepo.findByIdAndUserId(user.selectedApiKeyId, userId)
-		if (!apiKey || !apiKey.isActive || apiKey.provider !== 'groq') return null
+		if (!apiKey || !apiKey.isActive) return null
 
+		console.log('in api-key-s, resolveSelectedApiKeyForUser: ', apiKey)
 		return {
 			id: apiKey.id,
-			decryptedKey: decryptValue(apiKey.key)
+			decryptedKey: decryptValue(apiKey.key),
+			provider: apiKey.provider,
+			modelname: apiKey.modelname
 		}
 	}
 }

@@ -22,6 +22,7 @@ export const getApiKeyRepository = () => {
 				'apiKey.id AS id',
 				'apiKey.name AS name',
 				'apiKey.provider AS provider',
+				'apiKey.modelname as modelname',
 				'apiKey.isActive AS "isActive"',
 				'apiKey.userId AS "userId"',
 				'apiKey.createdAt AS "createdAt"',

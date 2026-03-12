@@ -20,9 +20,13 @@ function truncate(data: any): string {
 function pickApiKeyHeader(headers?: Record<string, any>) {
 	if (!headers) return undefined
 	const rawValue = headers['x-api-key'] ?? headers.x_api_key ?? headers['x-groq-api-key']
+	const provider = headers['x-provider'] || ''
+	const modelname = headers['x-model-name'] || ''
 	if (!rawValue) return undefined
 	return {
-		'x-api-key': rawValue
+		'x-api-key': rawValue,
+		'x-provider': provider,
+		'x-model-name': modelname
 	}
 }
 
