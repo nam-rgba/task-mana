@@ -37,6 +37,7 @@ class ProjectController {
 	genProjectSchedule = async (req: Request, res: Response, next: NextFunction) => {
 		const projectId = Number(req.params.projectId)
 		const file = req.file
+		const userId = Number(req.headers['x-user-id']) || undefined
 
 		if (!file) {
 			throw new BadRequestError('PDF file is required')
@@ -60,7 +61,13 @@ class ProjectController {
 		return new OKResponse(
 			'AI generated project schedule successfully!',
 			200,
-			await aiGenService.generateProjectSchedule(file.path, projectId)
+			await aiGenService.generateProjectSchedule(file.path, projectId, {
+				userId,
+				requestType: 'vision',
+				metadata: {
+					projectId
+				}
+			})
 		).send(res)
 	}
 }

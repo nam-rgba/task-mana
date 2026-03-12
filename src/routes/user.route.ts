@@ -8,5 +8,6 @@ const ctrl = new UserController()
 router.get('/', AsyncHandler(ctrl.getAllUsers))
 router.get('/profile', AsyncHandler(ctrl.getProfile))
 router.put('/profile', AsyncHandler(ctrl.updateProfile))
+router.patch('/setting-api-key', AsyncHandler(ctrl.updateSettingApiKey))
 
 export { router as userRouter }

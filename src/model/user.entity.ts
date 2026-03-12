@@ -1,10 +1,21 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, OneToMany } from 'typeorm'
+import {
+	Entity,
+	PrimaryGeneratedColumn,
+	Column,
+	CreateDateColumn,
+	UpdateDateColumn,
+	Index,
+	OneToMany,
+	ManyToOne,
+	JoinColumn
+} from 'typeorm'
 import { Position } from '~/types/position.type.js'
 import { TeamMember } from './teamMember.entity.js'
 import { Project } from './project.entity.js'
 import { Subscription } from './subscription.entity.js'
 import { Order } from './order.entity.js'
 import { AuthProvider } from './enums/auth-provider.enum.js'
+import { ApiKey } from './api-key.entity.js'
 
 @Entity('users')
 export class User {
@@ -51,6 +62,16 @@ export class User {
 
 	@Column({ type: 'varchar', default: AuthProvider.LOCAL })
 	authProvider: AuthProvider
+
+	@OneToMany(() => ApiKey, (apiKey) => apiKey.user)
+	apiKeys: Awaited<ApiKey[]>
+
+	@Column({ type: 'int', nullable: true })
+	selectedApiKeyId: number | null
+
+	@ManyToOne(() => ApiKey, { nullable: true, onDelete: 'SET NULL' })
+	@JoinColumn({ name: 'selectedApiKeyId' })
+	selectedApiKey: Awaited<ApiKey> | null
 
 	@CreateDateColumn()
 	createdAt!: Date

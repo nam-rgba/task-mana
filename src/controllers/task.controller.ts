@@ -51,18 +51,34 @@ class TaskController {
 	}
 
 	genAiTask = async (req: Request, res: Response, next: NextFunction) => {
+		const userId = Number(req.headers['x-user-id']) || undefined
 		new SuccessResponse({
 			message: 'AI generated task successfully!',
 			statusCode: 200,
-			metadata: await aiGenService.generateTask(req.body)
+			metadata: await aiGenService.generateTask(req.body, {
+				userId,
+				requestType: 'chat',
+				metadata: {
+					projectId: req.body?.project_id || req.body?.projectId || null,
+					teamId: req.body?.team_id || req.body?.teamId || null
+				}
+			})
 		}).send(res)
 	}
 
 	suggestDev = async (req: Request, res: Response, next: NextFunction) => {
+		const userId = Number(req.headers['x-user-id']) || undefined
 		new SuccessResponse({
 			message: 'AI suggested developer successfully!',
 			statusCode: 200,
-			metadata: await aiGenService.suggestDeveloper(req.body)
+			metadata: await aiGenService.suggestDeveloper(req.body, {
+				userId,
+				requestType: 'chat',
+				metadata: {
+					projectId: req.body?.project_id || req.body?.projectId || null,
+					teamId: req.body?.team_id || req.body?.teamId || null
+				}
+			})
 		}).send(res)
 	}
 
@@ -88,28 +104,52 @@ class TaskController {
 
 	// Gợi ý task cho hôm nay
 	suggestTaskToday = async (req: Request, res: Response, next: NextFunction) => {
+		const userId = Number(req.headers['x-user-id']) || undefined
 		new SuccessResponse({
 			message: 'AI suggested tasks for today successfully!',
 			statusCode: 200,
-			metadata: await aiGenService.suggestTaskToday(req.query)
+			metadata: await aiGenService.suggestTaskToday(req.query, {
+				userId,
+				requestType: 'chat',
+				metadata: {
+					projectId: req.query?.project_id || req.query?.projectId || null,
+					teamId: req.query?.team_id || req.query?.teamId || null
+				}
+			})
 		}).send(res)
 	}
 
 	// gợi ý story point cho task
 	estimateSP = async (req: Request, res: Response, next: NextFunction) => {
+		const userId = Number(req.headers['x-user-id']) || undefined
 		new SuccessResponse({
 			message: 'AI estimated story point successfully!',
 			statusCode: 201,
-			metadata: await aiGenService.estimateEffort(req.body)
+			metadata: await aiGenService.estimateEffort(req.body, {
+				userId,
+				requestType: 'chat',
+				metadata: {
+					projectId: req.body?.project_id || req.body?.projectId || null,
+					teamId: req.body?.team_id || req.body?.teamId || null
+				}
+			})
 		}).send(res)
 	}
 
 	//check task trùng lặp, na ná
 	checkDuplicateTask = async (req: Request, res: Response, next: NextFunction) => {
+		const userId = Number(req.headers['x-user-id']) || undefined
 		new SuccessResponse({
 			message: 'AI checked duplicate task successfully!',
 			statusCode: 200,
-			metadata: await aiGenService.checkDuplicateTask(req.body)
+			metadata: await aiGenService.checkDuplicateTask(req.body, {
+				userId,
+				requestType: 'chat',
+				metadata: {
+					projectId: req.body?.project_id || req.body?.projectId || null,
+					teamId: req.body?.team_id || req.body?.teamId || null
+				}
+			})
 		}).send(res)
 	}
 }
