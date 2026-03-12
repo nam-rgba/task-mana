@@ -13,7 +13,8 @@
 		"prettier:fix": "prettier --write .",
 		"typeorm": "typeorm-ts-node-commonjs",
 		"seed": "tsx src/scripts/seed.ts",
-		"seed:ai-feedback": "tsx src/scripts/seed-ai-feedback.ts"
+		"seed:ai-feedback": "tsx src/scripts/seed-ai-feedback.ts",
+		"clear:ai-logs": "node scripts/clear-ai-logs.mjs"
 	},
 	"keywords": [],
 	"author": "",

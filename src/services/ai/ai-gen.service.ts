@@ -13,7 +13,7 @@ import { TaskStatus, TaskPriority, TaskType } from '~/types/task.type.js'
 import { aiLogger } from './ai-logger.service.js'
 import { CloudinaryService } from '~/services/upload/cloudinary.service.js'
 import { apiKeyService } from '~/services/api-key.service.js'
-import { usageTrackingService } from '~/services/usage-tracking.service.js'
+import { RequestScope, usageTrackingService } from '~/services/usage-tracking.service.js'
 
 type AiRequestContext = {
 	userId?: number
@@ -86,39 +86,76 @@ class AiGenService {
 	private async resolveGroqContext(context?: AiRequestContext) {
 		if (!context?.userId) return null
 		try {
-			return await apiKeyService.resolveSelectedApiKeyForUser(context.userId)
-		} catch {
+			const selectedApiKey = await apiKeyService.resolveSelectedApiKeyForUser(context.userId)
+			if (!selectedApiKey) {
+				console.warn(`[AI_USAGE] No active selected API key resolved for user ${context.userId}`)
+				return null
+			}
+
+			console.log(`[AI_USAGE] Resolved selected API key ${selectedApiKey.id} for user ${context.userId}`)
+			return selectedApiKey
+		} catch (error) {
+			console.error(`[AI_USAGE] Failed to resolve selected API key for user ${context.userId}`, error)
 			return null
 		}
 	}
 
-	private async saveGroqUsage(responseData: any, context: AiRequestContext | undefined, apiKeyId?: number) {
-		if (!apiKeyId) return
-		await usageTrackingService.trackFromGroqResponse({
+	private async saveGroqUsage(
+		responseData: any,
+		context: AiRequestContext | undefined,
+		requestScope: RequestScope,
+		apiKeyId?: number
+	) {
+		if (!apiKeyId) {
+			console.warn('[AI_USAGE] Skip saving usage because apiKeyId is missing', {
+				requestScope,
+				requestType: context?.requestType || 'chat',
+				metadata: context?.metadata || null
+			})
+			return null
+		}
+
+		const savedUsage = await usageTrackingService.trackFromGroqResponse({
 			apiKeyId,
 			responseData,
 			requestType: context?.requestType || 'chat',
+			requestScope,
 			metadata: context?.metadata
 		})
+
+		if (!savedUsage) {
+			console.warn('[AI_USAGE] Skip saving usage because response has no usage payload', {
+				apiKeyId,
+				requestScope,
+				requestType: context?.requestType || 'chat'
+			})
+			return null
+		}
+
+		console.log(`[AI_USAGE] Saved usage ${savedUsage.id} for apiKey ${apiKeyId} (${requestScope})`)
+		return savedUsage
 	}
 
-	private async makeRequest(endpoint: string, body: any, context?: AiRequestContext) {
+	private async makeRequest(endpoint: string, body: any, scope: RequestScope, context?: AiRequestContext) {
 		const url = `${this.aiServiceUrl}${endpoint}`
-		const { startTime } = aiLogger.logRequest('POST', url, body)
 		const selectedApiKey = await this.resolveGroqContext(context)
+		const headers = selectedApiKey?.decryptedKey
+			? {
+					x_api_key: selectedApiKey.decryptedKey
+				}
+			: undefined
+		const { startTime } = aiLogger.logRequest('POST', url, body, headers)
 		try {
 			const res = await this.axiosInstance.post(
 				url,
 				body,
-				selectedApiKey?.decryptedKey
+				headers
 					? {
-							headers: {
-								x_api_key: selectedApiKey.decryptedKey
-							}
+							headers
 						}
 					: undefined
 			)
-			await this.saveGroqUsage(res.data, context, selectedApiKey?.id)
+			await this.saveGroqUsage(res.data, context, scope, selectedApiKey?.id)
 			aiLogger.logResponse('POST', url, res.status, res.data, startTime)
 			return res.data
 		} catch (error: any) {
@@ -138,31 +175,34 @@ class AiGenService {
 	}
 
 	async generateTask(body: any, context?: AiRequestContext) {
-		return this.makeRequest('/llm/compose', body, { requestType: 'chat', ...context })
+		return this.makeRequest('/llm/compose', body, RequestScope.TASK, { requestType: 'chat', ...context })
 	}
 
 	async suggestDeveloper(body: any, context?: AiRequestContext) {
 		// TODO(ai-feedback): wrap result with trackSuggestion(AiActionType.ASSIGNEE_SUGGESTION)
 		// and return feedbackId alongside the suggestion so the FE can submit explicit feedback.
-		return this.makeRequest('/llm/assign', body, { requestType: 'chat', ...context })
+		return this.makeRequest('/llm/assign', body, RequestScope.ASSIGN, { requestType: 'chat', ...context })
 	}
 
 	async estimateEffort(body: any, context?: AiRequestContext) {
 		// TODO(ai-feedback): wrap result with trackSuggestion(AiActionType.STORY_POINT_SUGGESTION)
 		// and return feedbackId alongside the suggestion so the FE can submit implicit feedback.
-		return this.makeRequest('/llm/estimate_sp', body, { requestType: 'chat', ...context })
+		return this.makeRequest('/llm/estimate_sp', body, RequestScope.STORYPOINT, { requestType: 'chat', ...context })
 	}
 
 	async suggestTaskToday(body: any, context?: AiRequestContext) {
-		return this.makeRequest('/llm/suggest_tasks_for_today', body, { requestType: 'chat', ...context })
+		return this.makeRequest('/llm/suggest_tasks_for_today', body, RequestScope.TASK, {
+			requestType: 'chat',
+			...context
+		})
 	}
 
 	async generateCompleteTask(body: any, context?: AiRequestContext) {
-		return this.makeRequest('/llm/generate_task', body, { requestType: 'chat', ...context })
+		return this.makeRequest('/llm/generate_task', body, RequestScope.TASK, { requestType: 'chat', ...context })
 	}
 
 	async checkDuplicateTask(body: any, context?: AiRequestContext) {
-		return this.makeRequest('/llm/duplicate', body, { requestType: 'chat', ...context })
+		return this.makeRequest('/llm/duplicate', body, RequestScope.TASK, { requestType: 'chat', ...context })
 	}
 
 	async generateProjectSchedule(filePath: string, projectId: number, context?: AiRequestContext) {
@@ -190,6 +230,7 @@ class AiGenService {
 						...(context?.metadata || {})
 					}
 				},
+				RequestScope.SCHEDULED,
 				selectedApiKey?.id
 			)
 		} catch (error: any) {
@@ -273,16 +314,22 @@ class AiGenService {
 			formData.append('files', fs.createReadStream(filePath))
 			formData.append('project_id', projectId)
 			const selectedApiKey = await this.resolveGroqContext(context)
+			const phaseHeaders = {
+				...formData.getHeaders(),
+				...(selectedApiKey?.decryptedKey ? { x_api_key: selectedApiKey.decryptedKey } : {})
+			}
 
 			let aiPhases: any
 			const phaseUrl = `${this.aiServiceUrl}/llm/generate_phases`
-			const { startTime: phaseStart } = aiLogger.logRequest('POST', phaseUrl, '[FormData: file + project_id]')
+			const { startTime: phaseStart } = aiLogger.logRequest(
+				'POST',
+				phaseUrl,
+				'[FormData: file + project_id]',
+				phaseHeaders
+			)
 			try {
 				const result = await this.axiosInstance.post(phaseUrl, formData, {
-					headers: {
-						...formData.getHeaders(),
-						...(selectedApiKey?.decryptedKey ? { x_api_key: selectedApiKey.decryptedKey } : {})
-					},
+					headers: phaseHeaders,
 					timeout: 300_000
 				})
 				aiPhases = result.data
@@ -295,6 +342,7 @@ class AiGenService {
 							...(context?.metadata || {})
 						}
 					},
+					RequestScope.SCHEDULED,
 					selectedApiKey?.id
 				)
 				aiLogger.logResponse('POST', phaseUrl, result.status, aiPhases, phaseStart)
@@ -393,6 +441,7 @@ class AiGenService {
 								phase_end: new Date(schedule.endDate * 1000).toISOString().split('T')[0]
 							}
 						},
+						RequestScope.TASK4SCHEDULED,
 						{
 							requestType: 'chat',
 							userId: context?.userId,

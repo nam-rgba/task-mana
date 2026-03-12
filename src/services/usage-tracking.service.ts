@@ -2,6 +2,14 @@ import { getUsageRepository } from '~/repository/usage.repository.js'
 
 type RequestType = 'chat' | 'vision'
 
+export enum RequestScope {
+	SCHEDULED = 'scheduled',
+	TASK4SCHEDULED = 'task-scheduled',
+	TASK = 'task',
+	STORYPOINT = 'storypoint',
+	ASSIGN = 'assign'
+}
+
 function toNullableNumber(value: unknown): number | null {
 	if (value === null || value === undefined) return null
 	const parsed = Number(value)
@@ -15,6 +23,7 @@ class UsageTrackingService {
 		apiKeyId: number
 		responseData: any
 		requestType: RequestType
+		requestScope: RequestScope
 		metadata?: Record<string, unknown>
 	}) {
 		const usage = params.responseData?.usage || params.responseData?.data?.usage || params.responseData?.result?.usage
@@ -44,6 +53,7 @@ class UsageTrackingService {
 
 		return await this.usageRepo.create({
 			apiKeyId: params.apiKeyId,
+			requestScope: params.requestScope,
 			promptTokens,
 			completionTokens,
 			totalTokens,

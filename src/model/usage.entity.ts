@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm'
 import { ApiKey } from './api-key.entity.js'
+import { RequestScope } from '~/services/usage-tracking.service.js'
 
 @Entity('usages')
 export class Usage {
@@ -12,6 +13,9 @@ export class Usage {
 	@ManyToOne(() => ApiKey, (apiKey) => apiKey.usages, { onDelete: 'CASCADE' })
 	@JoinColumn({ name: 'apiKeyId' })
 	apiKey: Awaited<ApiKey>
+
+	@Column({ type: 'varchar', length: 20 })
+	requestScope: RequestScope
 
 	@Column({ type: 'int', nullable: true })
 	promptTokens: number | null

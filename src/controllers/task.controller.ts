@@ -1,6 +1,8 @@
 // src/controller/task.controller.ts
 import { NextFunction, Request, Response } from 'express'
 import { aiGenService } from '~/services/ai/ai-gen.service.js'
+import { AppDataSource } from '~/db/data-source.js'
+import { Project } from '~/model/project.entity.js'
 
 import { TaskService } from '~/services/task.service.js'
 import { CreatedResponse, SuccessResponse } from '~/utils/success.response.js'
@@ -8,6 +10,21 @@ import { CreatedResponse, SuccessResponse } from '~/utils/success.response.js'
 const taskService = new TaskService()
 
 class TaskController {
+	private async resolveTeamId(projectIdInput: unknown, teamIdInput: unknown) {
+		const teamId = Number(teamIdInput)
+		if (Number.isInteger(teamId) && teamId > 0) return teamId
+
+		const projectId = Number(projectIdInput)
+		if (!Number.isInteger(projectId) || projectId <= 0) return null
+
+		const project = await AppDataSource.getRepository(Project).findOne({
+			where: { id: projectId },
+			select: ['id', 'teamId']
+		})
+
+		return project?.teamId ?? null
+	}
+
 	create = async (req: Request, res: Response, next: NextFunction) => {
 		const actorUserId = Number(req.headers['x-user-id']) || undefined
 		new CreatedResponse('Create task successfully!', 201, await taskService.createTask(req.body, actorUserId)).send(res)
@@ -52,6 +69,8 @@ class TaskController {
 
 	genAiTask = async (req: Request, res: Response, next: NextFunction) => {
 		const userId = Number(req.headers['x-user-id']) || undefined
+		const projectId = req.body?.project_id || req.body?.projectId || null
+		const teamId = await this.resolveTeamId(projectId, req.body?.team_id || req.body?.teamId)
 		new SuccessResponse({
 			message: 'AI generated task successfully!',
 			statusCode: 200,
@@ -59,8 +78,8 @@ class TaskController {
 				userId,
 				requestType: 'chat',
 				metadata: {
-					projectId: req.body?.project_id || req.body?.projectId || null,
-					teamId: req.body?.team_id || req.body?.teamId || null
+					projectId,
+					teamId
 				}
 			})
 		}).send(res)
@@ -68,6 +87,8 @@ class TaskController {
 
 	suggestDev = async (req: Request, res: Response, next: NextFunction) => {
 		const userId = Number(req.headers['x-user-id']) || undefined
+		const projectId = req.body?.project_id || req.body?.projectId || null
+		const teamId = await this.resolveTeamId(projectId, req.body?.team_id || req.body?.teamId)
 		new SuccessResponse({
 			message: 'AI suggested developer successfully!',
 			statusCode: 200,
@@ -75,8 +96,8 @@ class TaskController {
 				userId,
 				requestType: 'chat',
 				metadata: {
-					projectId: req.body?.project_id || req.body?.projectId || null,
-					teamId: req.body?.team_id || req.body?.teamId || null
+					projectId,
+					teamId
 				}
 			})
 		}).send(res)
@@ -105,6 +126,8 @@ class TaskController {
 	// Gợi ý task cho hôm nay
 	suggestTaskToday = async (req: Request, res: Response, next: NextFunction) => {
 		const userId = Number(req.headers['x-user-id']) || undefined
+		const projectId = req.query?.project_id || req.query?.projectId || null
+		const teamId = await this.resolveTeamId(projectId, req.query?.team_id || req.query?.teamId)
 		new SuccessResponse({
 			message: 'AI suggested tasks for today successfully!',
 			statusCode: 200,
@@ -112,8 +135,8 @@ class TaskController {
 				userId,
 				requestType: 'chat',
 				metadata: {
-					projectId: req.query?.project_id || req.query?.projectId || null,
-					teamId: req.query?.team_id || req.query?.teamId || null
+					projectId,
+					teamId
 				}
 			})
 		}).send(res)
@@ -122,6 +145,8 @@ class TaskController {
 	// gợi ý story point cho task
 	estimateSP = async (req: Request, res: Response, next: NextFunction) => {
 		const userId = Number(req.headers['x-user-id']) || undefined
+		const projectId = req.body?.project_id || req.body?.projectId || null
+		const teamId = await this.resolveTeamId(projectId, req.body?.team_id || req.body?.teamId)
 		new SuccessResponse({
 			message: 'AI estimated story point successfully!',
 			statusCode: 201,
@@ -129,8 +154,8 @@ class TaskController {
 				userId,
 				requestType: 'chat',
 				metadata: {
-					projectId: req.body?.project_id || req.body?.projectId || null,
-					teamId: req.body?.team_id || req.body?.teamId || null
+					projectId,
+					teamId
 				}
 			})
 		}).send(res)
@@ -139,6 +164,8 @@ class TaskController {
 	//check task trùng lặp, na ná
 	checkDuplicateTask = async (req: Request, res: Response, next: NextFunction) => {
 		const userId = Number(req.headers['x-user-id']) || undefined
+		const projectId = req.body?.project_id || req.body?.projectId || null
+		const teamId = await this.resolveTeamId(projectId, req.body?.team_id || req.body?.teamId)
 		new SuccessResponse({
 			message: 'AI checked duplicate task successfully!',
 			statusCode: 200,
@@ -146,8 +173,8 @@ class TaskController {
 				userId,
 				requestType: 'chat',
 				metadata: {
-					projectId: req.body?.project_id || req.body?.projectId || null,
-					teamId: req.body?.team_id || req.body?.teamId || null
+					projectId,
+					teamId
 				}
 			})
 		}).send(res)

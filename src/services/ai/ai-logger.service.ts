@@ -17,6 +17,15 @@ function truncate(data: any): string {
 	return str
 }
 
+function pickApiKeyHeader(headers?: Record<string, any>) {
+	if (!headers) return undefined
+	const rawValue = headers['x-api-key'] ?? headers.x_api_key ?? headers['x-groq-api-key']
+	if (!rawValue) return undefined
+	return {
+		'x-api-key': rawValue
+	}
+}
+
 function formatLog(entry: {
 	timestamp: string
 	direction: 'REQUEST' | 'RESPONSE' | 'ERROR'
@@ -24,14 +33,17 @@ function formatLog(entry: {
 	url: string
 	duration?: number
 	status?: number
+	headers?: Record<string, any>
 	body?: any
 	error?: string
 }): string {
+	const apiKeyHeader = pickApiKeyHeader(entry.headers)
 	const lines = [
 		`\n${'═'.repeat(80)}`,
 		`[${entry.timestamp}] ${entry.direction} ${entry.method} ${entry.url}`,
 		entry.status ? `Status: ${entry.status}` : '',
 		entry.duration ? `Duration: ${entry.duration}ms` : '',
+		apiKeyHeader ? `Headers:\n${truncate(apiKeyHeader)}` : '',
 		entry.body !== undefined ? `Body:\n${truncate(entry.body)}` : '',
 		entry.error ? `Error: ${entry.error}` : '',
 		'═'.repeat(80)
@@ -41,13 +53,11 @@ function formatLog(entry: {
 
 class AiLogger {
 	private write(text: string) {
-		// Console (always)
-		console.log(text)
 		// File (append)
 		fs.appendFile(LOG_FILE, text + '\n', () => {})
 	}
 
-	logRequest(method: string, url: string, body?: any) {
+	logRequest(method: string, url: string, body?: any, headers?: Record<string, any>) {
 		const timestamp = new Date().toISOString()
 		this.write(
 			formatLog({
@@ -55,6 +65,7 @@ class AiLogger {
 				direction: 'REQUEST',
 				method,
 				url,
+				headers,
 				body
 			})
 		)
