@@ -18,7 +18,9 @@ function toNullableNumber(value: unknown): number | null {
 }
 
 class UsageTrackingService {
-	private usageRepo = getUsageRepository()
+	private get usageRepo() {
+		return getUsageRepository()
+	}
 
 	async trackFromGroqResponse(params: {
 		apiKeyId: number
