@@ -25,6 +25,13 @@ interface NotifyTaskParticipantInput {
 	actorUserId?: number
 }
 
+interface NotifyBulkProjectAssignmentInput {
+	recipientUserId: number
+	projectId: number
+	projectName: string
+	taskCount: number
+}
+
 class NotificationService {
 	private notificationRepo = getNotificationRepository()
 	private userRepo = getUserRepository()
@@ -111,6 +118,30 @@ class NotificationService {
 		}
 
 		return notification
+	}
+
+	async notifyBulkProjectAssignment(input: NotifyBulkProjectAssignmentInput) {
+		const recipient = await this.userRepo.findOne({ id: input.recipientUserId })
+		if (!recipient?.id || input.taskCount < 1) return null
+
+		const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+		const projectPath = `/project/${input.projectId}`
+		const title = `Taskee AI đã giao cho bạn ${input.taskCount} task mới`
+		const content = `Tadaaaa, bạn đã được Taskee AI chọn mặt gửi vàng vào ${input.taskCount} task trong dự án mới ${input.projectName}!!!`
+
+		return await this.createNotification({
+			userId: recipient.id,
+			type: 'TASK_BULK_ASSIGNED_BY_AI',
+			title,
+			content,
+			metadata: {
+				projectId: input.projectId,
+				projectName: input.projectName,
+				taskCount: input.taskCount,
+				projectPath,
+				redirectUrl: `${frontendUrl}${projectPath}`
+			}
+		})
 	}
 }
 

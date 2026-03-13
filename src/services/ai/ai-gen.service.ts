@@ -14,6 +14,7 @@ import { aiLogger } from './ai-logger.service.js'
 import { CloudinaryService } from '~/services/upload/cloudinary.service.js'
 import { apiKeyService } from '~/services/api-key.service.js'
 import { RequestScope, usageTrackingService } from '~/services/usage-tracking.service.js'
+import { notificationService } from '~/services/notification/notification.service.js'
 
 type AiRequestContext = {
 	userId?: number
@@ -410,7 +411,7 @@ class AiGenService {
 			// ── Step 3: Load team members for this project ──
 			const project = await AppDataSource.getRepository(Project).findOne({
 				where: { id: projectId },
-				select: ['id', 'teamId']
+				select: ['id', 'teamId', 'name']
 			})
 
 			const teamMembers = project?.teamId
@@ -433,6 +434,7 @@ class AiGenService {
 
 			// ── Step 4: Generate tasks for each schedule ──
 			let totalTasksCreated = 0
+			const taskCountByAssignee = new Map<number, number>()
 
 			for (let i = 0; i < savedSchedules.length; i++) {
 				const schedule = savedSchedules[i]
@@ -487,6 +489,8 @@ class AiGenService {
 								: schedule.endDate
 						const rawEstimateEffort = t.estimate_effort ?? t.story_point ?? t.story_points
 						const estimateEffort = Number.isFinite(Number(rawEstimateEffort)) ? Number(rawEstimateEffort) : 0
+						const rawAssigneeId = t.assignee
+						const assigneeId = Number.isInteger(Number(rawAssigneeId)) ? Number(rawAssigneeId) : undefined
 
 						const task = taskRepo.create({
 							title: t.title || t.name || `Task ${j + 1}`,
@@ -500,11 +504,15 @@ class AiGenService {
 							estimateEffort,
 							scheduleId: schedule.id,
 							projectId,
-							assigneeId: t.assignee || null,
+							assigneeId,
 							sortOrder: j
 						})
 						const saved = await taskRepo.save(task)
 						savedTasks.push(saved)
+
+						if (assigneeId) {
+							taskCountByAssignee.set(assigneeId, (taskCountByAssignee.get(assigneeId) ?? 0) + 1)
+						}
 					}
 
 					totalTasksCreated += savedTasks.length
@@ -523,6 +531,17 @@ class AiGenService {
 					})
 				}
 			}
+
+			await Promise.all(
+				Array.from(taskCountByAssignee.entries()).map(async ([assigneeId, taskCount]) => {
+					await notificationService.notifyBulkProjectAssignment({
+						recipientUserId: assigneeId,
+						projectId,
+						projectName: project?.name || `Project ${projectId}`,
+						taskCount
+					})
+				})
+			)
 
 			// ── Step 4: Complete ──
 			sendEvent('complete', {
