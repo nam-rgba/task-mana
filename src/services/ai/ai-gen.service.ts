@@ -485,6 +485,8 @@ class AiGenService {
 							: t.due_date
 								? Math.floor(new Date(t.due_date).getTime() / 1000)
 								: schedule.endDate
+						const rawEstimateEffort = t.estimate_effort ?? t.story_point ?? t.story_points
+						const estimateEffort = Number.isFinite(Number(rawEstimateEffort)) ? Number(rawEstimateEffort) : 0
 
 						const task = taskRepo.create({
 							title: t.title || t.name || `Task ${j + 1}`,
@@ -495,7 +497,7 @@ class AiGenService {
 							startDate: taskStartTs,
 							dueDate: taskEndTs,
 							duration: t.duration || null,
-							estimateEffort: t.estimate_effort || t.story_points || 0,
+							estimateEffort,
 							scheduleId: schedule.id,
 							projectId,
 							assigneeId: t.assignee || null,
