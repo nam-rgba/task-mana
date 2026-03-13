@@ -17,7 +17,30 @@ import { AppDataSource } from './db/data-source.js'
 import { notificationWsService } from './services/notification/notification-ws.service.js'
 
 app.use(morgan('dev'))
+// Tạo một format log chi tiết: IP, Thời gian, Method, URL, Status, User-Agent, Toàn bộ Headers
+app.use(
+	morgan(
+		':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'
+	)
+)
+
+// Nếu muốn log cả nội dung Header cụ thể (ví dụ: host, x-forwarded-for)
+app.use((req, res, next) => {
+	console.log('--- NEW REQUEST ---')
+	console.log('IP:', req.ip || req.connection.remoteAddress)
+	console.log('Headers:', JSON.stringify(req.headers, null, 2))
+	next()
+})
+
+app.set('trust proxy', true)
 app.use(cors())
+
+import rateLimit from 'express-rate-limit'
+const limiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 phút
+	max: 100 // Mỗi IP chỉ được 100 request/15p
+})
+app.use(limiter)
 
 // connect db
 AppDataSource.initialize()
