@@ -9,6 +9,9 @@ const app = express()
 import { router } from './routes/index.js'
 import { initSyncAICronJob } from './services/cron/sync-ai.cron.js'
 
+// Đặt trust proxy trước tất cả middleware để req.ip luôn trả về IP thật của client
+app.set('trust proxy', 1)
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
@@ -16,29 +19,31 @@ import morgan from 'morgan'
 import { AppDataSource } from './db/data-source.js'
 import { notificationWsService } from './services/notification/notification-ws.service.js'
 
-app.use(morgan('dev'))
-// Tạo một format log chi tiết: IP, Thời gian, Method, URL, Status, User-Agent, Toàn bộ Headers
+// Đăng ký token tuỳ chỉnh để morgan lấy IP thật (qua proxy)
+morgan.token('real-ip', (req) => {
+	const forwarded = req.headers['x-forwarded-for']
+	if (forwarded) {
+		return (Array.isArray(forwarded) ? forwarded[0] : forwarded).split(',')[0].trim()
+	}
+	return req.socket.remoteAddress ?? '-'
+})
+morgan.token('origin-source', (req) => req.headers['origin'] ?? req.headers['referer'] ?? '-')
+
+// Format log: real-IP | method url status | origin | user-agent
 app.use(
 	morgan(
-		':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'
+		':real-ip - [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] origin=:origin-source ":user-agent"'
 	)
 )
 
-// Nếu muốn log cả nội dung Header cụ thể (ví dụ: host, x-forwarded-for)
-app.use((req, res, next) => {
-	console.log('--- NEW REQUEST ---')
-	console.log('IP:', req.ip || req.connection.remoteAddress)
-	console.log('Headers:', JSON.stringify(req.headers, null, 2))
-	next()
-})
-
-app.set('trust proxy', true)
 app.use(cors())
 
 import rateLimit from 'express-rate-limit'
 const limiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 phút
-	max: 100 // Mỗi IP chỉ được 100 request/15p
+	max: 1000, // Mỗi IP chỉ được 1000 request / 15p
+	standardHeaders: true,
+	legacyHeaders: false
 })
 app.use(limiter)
 
