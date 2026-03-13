@@ -4,6 +4,7 @@ import { NotFoundError } from '~/utils/error.reponse.js'
 import { notificationWsService } from './notification-ws.service.js'
 import { renderTaskNotificationContent } from './notification-template.service.js'
 import { sendTaskNotificationEmail } from '~/services/email/task-email.service.js'
+import { sendBulkProjectAssignmentEmail } from '~/services/email/bulk-project-assignment-email.service.js'
 
 export type TaskNotifyAction = 'created' | 'updated'
 export type TaskNotifyRole = 'assignee' | 'reviewer'
@@ -129,7 +130,7 @@ class NotificationService {
 		const title = `Taskee AI đã giao cho bạn ${input.taskCount} task mới`
 		const content = `Tadaaaa, bạn đã được Taskee AI chọn mặt gửi vàng vào ${input.taskCount} task trong dự án mới ${input.projectName}!!!`
 
-		return await this.createNotification({
+		const notification = await this.createNotification({
 			userId: recipient.id,
 			type: 'TASK_BULK_ASSIGNED_BY_AI',
 			title,
@@ -142,6 +143,23 @@ class NotificationService {
 				redirectUrl: `${frontendUrl}${projectPath}`
 			}
 		})
+
+		if (recipient.email) {
+			await sendBulkProjectAssignmentEmail({
+				userId: recipient.id,
+				toEmail: recipient.email,
+				subject: title,
+				notificationId: notification.id,
+				templateData: {
+					recipientName: recipient.name || 'there',
+					projectName: input.projectName,
+					taskCount: input.taskCount,
+					projectUrl: `${frontendUrl}${projectPath}`
+				}
+			})
+		}
+
+		return notification
 	}
 }
 
