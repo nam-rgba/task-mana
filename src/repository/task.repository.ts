@@ -28,6 +28,9 @@ export interface TaskQuery {
 	qcId?: number
 	projectId?: number
 	teamId?: number
+	startAt?: number
+	endAt?: number
+	listing?: string
 }
 
 export interface PerformanceReviewTaskComment {
@@ -239,7 +242,20 @@ export const getTaskRepository = () => {
 
 	// Lấy tasks theo team - sử dụng Raw Query
 	const findAllByRawQuery = async (query: TaskQuery) => {
-		const { page = 1, limit = 10, teamId, assigneeId, qcId, status, priority, projectId, dueDate } = query
+		const {
+			page = 1,
+			limit = 10,
+			teamId,
+			assigneeId,
+			qcId,
+			status,
+			priority,
+			projectId,
+			dueDate,
+			startAt,
+			endAt,
+			listing
+		} = query
 		const { skip: _skip, limit: _limit } = normalizePaging({ page, limit })
 
 		const params: any[] = [teamId]
@@ -247,13 +263,23 @@ export const getTaskRepository = () => {
 
 		let queryString = `
 			SELECT t.*, 
-				json_build_object('id', u1.id, 'name', u1.name, 'email', u1.email, 'avatar', u1.avatar) as assignee,
-				json_build_object('id', u2.id, 'name', u2.name, 'email', u2.email, 'avatar', u2.avatar) as reviewer,
+				${
+					!listing
+						? `json_build_object('id', u1.id, 'name', u1.name, 'email', u1.email, 'avatar', u1.avatar) as assignee,
+				json_build_object('id', u2.id, 'name', u2.name, 'email', u2.email, 'avatar', u2.avatar) as reviewer,`
+						: ``
+				}
 				json_build_object('id', p.id, 'name', p.name) as project
 			FROM tasks t
 			INNER JOIN projects p ON t."projectId" = p.id
-			LEFT JOIN users u1 ON t."assigneeId" = u1.id
+			${
+				!listing
+					? `
+          LEFT JOIN users u1 ON t."assigneeId" = u1.id
 			LEFT JOIN users u2 ON t."reviewerId" = u2.id
+        `
+					: ``
+			}
 			WHERE p."teamId" = $1
 		`
 
@@ -295,11 +321,22 @@ export const getTaskRepository = () => {
 			paramIndex += 2
 		}
 
+		if (listing) {
+			const startC = dayjs.unix(Number(startAt)).unix() || dayjs().startOf('month').unix()
+			const endC = dayjs.unix(Number(endAt)).unix() || dayjs().endOf('month').unix()
+			queryString += ` AND t."dueDate" BETWEEN $${paramIndex} AND $${paramIndex + 1}`
+			params.push(startC, endC)
+			paramIndex += 2
+		}
+
 		queryString += `
 			ORDER BY t."created_at" DESC
 			LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
 		`
 		params.push(_limit, _skip)
+
+		console.log('Query:', queryString)
+		console.log('params:', startAt, endAt, listing, ...params)
 
 		const tasks = await AppDataSource.query(queryString, params)
 
