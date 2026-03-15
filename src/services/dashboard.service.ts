@@ -49,15 +49,15 @@ class DashboardService {
 	): Promise<DashboardResponse> {
 		const taskRepo = AppDataSource.getRepository(Task)
 
-			// Convert unix timestamps to UTC start of day and next day for end
-			const startDate = dayjs.unix(startAt).utc().startOf('day').toDate()
-			const endDate = dayjs.unix(endAt).utc().add(1, 'day').startOf('day').toDate()
+		// Convert unix timestamps to UTC start of day and next day for end
+		const startDate = dayjs.unix(startAt).utc().startOf('day').toDate()
+		const endDate = dayjs.unix(endAt).utc().add(1, 'day').startOf('day').toDate()
 
-			// Base query builder
-			const baseQuery = taskRepo
-				.createQueryBuilder('task')
-				.leftJoinAndSelect('task.project', 'project')
-				.where('task.createdAt >= :startDate AND task.createdAt < :endDate', { startDate, endDate })
+		// Base query builder
+		const baseQuery = taskRepo
+			.createQueryBuilder('task')
+			.leftJoinAndSelect('task.project', 'project')
+			.where('task.createdAt >= :startDate AND task.createdAt < :endDate', { startDate, endDate })
 
 		// If justForMe is false, filter by team membership
 		if (!justForMe) {
