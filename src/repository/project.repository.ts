@@ -32,6 +32,9 @@ export const getProjectRepository = () => {
 		limit?: number
 		query?: { [key: string]: any }
 	}): Promise<Project[]> => {
+		if (!query?.teamId && !query?.isAdmin) {
+			return []
+		}
 		return await repo.find({
 			where: query,
 			skip: page && limit ? (page - 1) * limit : undefined,

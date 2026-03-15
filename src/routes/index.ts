@@ -17,6 +17,7 @@ import { documentRouter } from './document.route.js'
 import { notificationRouter } from './notification.route.js'
 import { apiKeyRouter } from './api-key.route.js'
 import { skillRouter } from './skill.route.js'
+import { dashboardRouter } from './dashboard.route.js'
 
 const router = express.Router()
 
@@ -44,6 +45,7 @@ router.use('/user', userRouter)
 router.use('/users', userRouter)
 router.use('/api-keys', apiKeyRouter)
 router.use('/skills', skillRouter)
+router.use('/dashboard', dashboardRouter)
 router.use('/task', taskRouter)
 router.use('/team', teamRouter)
 router.use('/project', projectRouter)
