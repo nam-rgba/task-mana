@@ -9,11 +9,13 @@ import { AppDataSource } from '~/db/data-source.js'
 import { User } from '~/model/user.entity.js'
 import { BadRequestError, NotFoundError } from '~/utils/error.reponse.js'
 import { getSkillRepository } from '~/repository/skill.repository.js'
+import { getScheduleRepository } from '~/repository/schedule.repository.js'
 
 export class TaskService {
 	private repo = getTaskRepository()
 	private teamMemberRepo = getTeamMemberRepository()
 	private skillRepo = getSkillRepository()
+	private scheduleRepo = getScheduleRepository()
 
 	async getTasks(query: TaskQuery) {
 		const { page, limit, ...queries } = query
@@ -32,8 +34,23 @@ export class TaskService {
 	}
 
 	async updateTask(id: number, data: Partial<Task>, actorUserId?: number): Promise<Task | null> {
+		const existingTask = await this.repo.findOne(id)
+		if (!existingTask) return null
+
+		const oldStatus = existingTask.status
 		const task = await this.repo.update(id, data)
 		if (!task) return null
+		const newStatus = task.status
+
+		console.log('Task updated:', task)
+
+		if (oldStatus !== TaskStatus.Done && newStatus === TaskStatus.Done && task.scheduleId) {
+			await this.updateProgressForSchedule(task.scheduleId, 1)
+		}
+
+		if (oldStatus === TaskStatus.Done && newStatus !== TaskStatus.Done && task.scheduleId) {
+			await this.updateProgressForSchedule(task.scheduleId, -1)
+		}
 
 		await this.activateScheduleForTask(task)
 		await this.notifyTaskStakeholders(task, 'updated', actorUserId)
@@ -254,6 +271,16 @@ export class TaskService {
 			},
 			users
 		}
+	}
+
+	async updateProgressForSchedule(scheduleId: number, delta: number) {
+		const schdule = await this.scheduleRepo.findOneById(scheduleId)
+		if (!schdule) return
+		const newProgress = ((schdule?.completedTasks + delta) / (schdule.totalTasks || 1)) * 100
+		await this.scheduleRepo.update(scheduleId, {
+			progress: Math.round(newProgress),
+			completedTasks: schdule.completedTasks + delta
+		})
 	}
 
 	private async notifyTaskStakeholders(task: Task, action: 'created' | 'updated', actorUserId?: number) {

@@ -28,11 +28,21 @@ morgan.token('real-ip', (req) => {
 	return req.socket.remoteAddress ?? '-'
 })
 morgan.token('origin-source', (req) => req.headers['origin'] ?? req.headers['referer'] ?? '-')
+morgan.token('colored-status', (_req, res) => {
+	const status = res.statusCode
+	const statusText = String(status)
+
+	if (status >= 500) return `\x1b[31m${statusText}\x1b[0m`
+	if (status >= 400) return `\x1b[33m${statusText}\x1b[0m`
+	if (status >= 300) return `\x1b[36m${statusText}\x1b[0m`
+	if (status >= 200) return `\x1b[32m${statusText}\x1b[0m`
+	return statusText
+})
 
 // Format log: real-IP | method url status | origin | user-agent
 app.use(
 	morgan(
-		':real-ip - [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] origin=:origin-source ":user-agent"'
+		'[:real-ip] - [:date[clf]] : :method  \n :url HTTP/:http-version" :colored-status :res[content-length] origin=:origin-source'
 	)
 )
 
@@ -62,11 +72,6 @@ AppDataSource.initialize()
 	.catch((err) => console.error('❌ DB init error:', err))
 
 app.use('/api', router)
-
-app.use((req, res, next) => {
-	const error = new Error('Not found')
-	next(error)
-})
 
 // Error handling function
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment

@@ -36,4 +36,13 @@ export class Schedule extends AppBaseEntity {
 
 	@OneToMany(() => Task, (task) => task.schedule)
 	tasks: Awaited<Task[]>
+
+	@Column({ type: 'int', default: 0 })
+	progress: number
+
+	@Column({ type: 'int', default: 0 })
+	totalTasks: number
+
+	@Column({ type: 'int', default: 0 })
+	completedTasks: number
 }

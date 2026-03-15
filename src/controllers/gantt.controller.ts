@@ -61,6 +61,9 @@ class GanttController {
 	generate = async (req: MulterRequest, res: Response, next: NextFunction) => {
 		const projectId = Number(req.params.projectId)
 		const userId = Number(req.headers['x-user-id']) || undefined
+		const startDate = typeof req.body?.startDate === 'string' ? req.body.startDate : undefined
+		const rawDuration = Number(req.body?.duration)
+		const duration = Number.isFinite(rawDuration) ? rawDuration : undefined
 		if (!req.file) throw new BadRequestError('File is required')
 
 		// SSE headers
@@ -70,13 +73,22 @@ class GanttController {
 			Connection: 'keep-alive'
 		})
 
-		await aiGenService.generateProjectWithSSE(req.file.path, projectId, res, {
-			userId,
-			requestType: 'vision',
-			metadata: {
-				projectId
+		await aiGenService.generateProjectWithSSE(
+			req.file.path,
+			projectId,
+			res,
+			{
+				userId,
+				requestType: 'vision',
+				metadata: {
+					projectId
+				}
+			},
+			{
+				startDate,
+				duration
 			}
-		})
+		)
 	}
 }
 

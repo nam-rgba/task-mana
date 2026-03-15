@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios'
+import { Response } from 'express'
 import FormData from 'form-data'
 import fs from 'fs'
 import http from 'http'
@@ -15,11 +16,17 @@ import { CloudinaryService } from '~/services/upload/cloudinary.service.js'
 import { apiKeyService } from '~/services/api-key.service.js'
 import { RequestScope, usageTrackingService } from '~/services/usage-tracking.service.js'
 import { notificationService } from '~/services/notification/notification.service.js'
+import dayjs from 'dayjs'
 
 type AiRequestContext = {
 	userId?: number
 	requestType?: 'chat' | 'vision'
 	metadata?: Record<string, unknown>
+}
+
+type ScheduleGenerationOptions = {
+	startDate?: string
+	duration?: number
 }
 
 class AiGenService {
@@ -177,6 +184,11 @@ class AiGenService {
 		}
 	}
 
+	private formatStartDateForAi(startDate?: string) {
+		if (!startDate) return dayjs().format('DD/MM/YYYY')
+		return dayjs(startDate).format('DD/MM/YYYY')
+	}
+
 	async generateTask(body: any, context?: AiRequestContext) {
 		return this.makeRequest('/llm/compose', body, RequestScope.TASK, { requestType: 'chat', ...context })
 	}
@@ -215,10 +227,18 @@ class AiGenService {
 		})
 	}
 
-	async generateProjectSchedule(filePath: string, projectId: number, context?: AiRequestContext) {
+	async generateProjectSchedule(
+		filePath: string,
+		projectId: number,
+		context?: AiRequestContext,
+		options?: ScheduleGenerationOptions
+	) {
 		const formData = new FormData()
 		formData.append('files', fs.createReadStream(filePath))
 		formData.append('project_id', projectId)
+		const formattedStartDate = this.formatStartDateForAi(options?.startDate)
+		formData.append('start_date', formattedStartDate)
+		formData.append('duration', options?.duration)
 		const selectedApiKey = await this.resolveGroqContext(context)
 
 		let aiPhases: any
@@ -304,8 +324,9 @@ class AiGenService {
 	async generateProjectWithSSE(
 		filePath: string,
 		projectId: number,
-		res: import('express').Response,
-		context?: AiRequestContext
+		res: Response,
+		context?: AiRequestContext,
+		options?: ScheduleGenerationOptions
 	) {
 		const sendEvent = (event: string, data: any) => {
 			res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
@@ -329,6 +350,13 @@ class AiGenService {
 			const formData = new FormData()
 			formData.append('files', fs.createReadStream(filePath))
 			formData.append('project_id', projectId)
+			const formattedStartDate = this.formatStartDateForAi(options?.startDate)
+			if (formattedStartDate) {
+				formData.append('start_date', formattedStartDate)
+			}
+			if (typeof options?.duration === 'number' && Number.isFinite(options.duration)) {
+				formData.append('duration', String(options.duration))
+			}
 			const selectedApiKey = await this.resolveGroqContext(context)
 			const phaseHeaders = {
 				...formData.getHeaders(),
@@ -448,7 +476,7 @@ class AiGenService {
 
 				// Delay giữa các request để tránh overload AI server (đặc biệt qua ngrok)
 				if (i > 0) {
-					await new Promise((resolve) => setTimeout(resolve, 2000))
+					await new Promise((resolve) => setTimeout(resolve, 3000))
 				}
 
 				try {
@@ -516,6 +544,10 @@ class AiGenService {
 					}
 
 					totalTasksCreated += savedTasks.length
+
+					// edit lại tổng số task tạo cho schedule:
+					schedule.totalTasks = savedTasks.length
+					await scheduleRepo.save(schedule)
 
 					sendEvent('task_done', {
 						scheduleIndex: i,
