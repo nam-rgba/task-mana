@@ -139,17 +139,30 @@ class DiscordService {
 				else if (commandName === 'projects') {
 					await interaction.deferReply() // Trì hoãn reply vì có thể mất thời gian
 
-					const projects = await projectService.getProjectAndId()
+					if (!interaction.guildId) {
+						await interaction.editReply('Lệnh này chỉ có thể dùng trong server Discord.')
+						return
+					}
+
+					const team = await teamService.findByDiscordServerId(interaction.guildId)
+					if (!team) {
+						await interaction.editReply(
+							'Server này chưa được liên kết với team nào. Vui lòng cập nhật `discordServerId` cho team trước.'
+						)
+						return
+					}
+
+					const projects = await projectService.getProjectAndIdByTeamId(team.id)
 
 					if (projects.length === 0) {
-						await interaction.editReply('Chưa có dự án nào trong hệ thống.')
+						await interaction.editReply(`Team **${team.name}** chưa có dự án nào trong hệ thống.`)
 						return
 					}
 
 					const projectList = projects.map((p, index) => `${index + 1}. **${p.name}** (ID: \`${p.id}\`)`).join('\n')
 
 					await interaction.editReply({
-						content: ` **Danh sách dự án hiện tại:**\n\n${projectList}`
+						content: ` **Danh sách dự án của team ${team.name}:**\n\n${projectList}`
 					})
 				}
 

@@ -23,6 +23,14 @@ export const getProjectRepository = () => {
 		return projects.map((project) => ({ id: project.id, name: project.name }))
 	}
 
+	const getAllNameAndIdByTeamId = async (teamId: number): Promise<{ id: number; name: string }[]> => {
+		const projects = await repo.find({
+			where: { teamId },
+			select: ['id', 'name']
+		})
+		return projects.map((project) => ({ id: project.id, name: project.name }))
+	}
+
 	const findAll = async ({
 		page,
 		limit,
@@ -68,6 +76,7 @@ export const getProjectRepository = () => {
 		create,
 		update,
 		deleteProject,
-		getAllNameAndId
+		getAllNameAndId,
+		getAllNameAndIdByTeamId
 	}
 }

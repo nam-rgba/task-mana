@@ -32,10 +32,9 @@ const renderTaskEmailHtml = (data: TaskEmailTemplateData) => {
 	const templatePath = path.resolve(__dirname, '../../ui/task-notification-email.handlebars')
 	const templateSource = fs.readFileSync(templatePath, 'utf-8')
 	const template = Handlebars.compile(templateSource)
+	const frontendBaseUrl = (data.frontendUrl || process.env.FRONTEND_URL || '').replace(/\/+$/, '')
 
-	const taskUrl = data.taskId
-		? `${data.frontendUrl || process.env.FRONTEND_URL || ''}/tasks/${data.taskId}`
-		: data.frontendUrl || process.env.FRONTEND_URL || ''
+	const taskUrl = data.taskId ? `${frontendBaseUrl}/task?taskId=${data.taskId}` : frontendBaseUrl
 
 	return template({
 		...data,

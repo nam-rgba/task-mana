@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
+import fs from 'fs'
 import { ganttService } from '~/services/gantt.service.js'
 import { taskDependencyService } from '~/services/task-dependency.service.js'
 import { aiGenService } from '~/services/ai/ai-gen.service.js'
 import { OKResponse, CreatedResponse } from '~/utils/success.response.js'
-import { BadRequestError } from '~/utils/error.reponse.js'
+import { BadRequestError, NotFoundError } from '~/utils/error.reponse.js'
 
 interface MulterRequest extends Request {
 	file?: Express.Multer.File
@@ -64,17 +65,41 @@ class GanttController {
 		const startDate = typeof req.body?.startDate === 'string' ? req.body.startDate : undefined
 		const rawDuration = Number(req.body?.duration)
 		const duration = Number.isFinite(rawDuration) ? rawDuration : undefined
-		if (!req.file) throw new BadRequestError('File is required')
+		const { job, isNew } = aiGenService.createOrReuseGenerateJob(projectId, userId)
+
+		if (isNew && !req.file) throw new BadRequestError('File is required')
+		if (!isNew && req.file?.path) {
+			fs.unlink(req.file.path, () => {})
+		}
 
 		// SSE headers
 		res.writeHead(200, {
 			'Content-Type': 'text/event-stream',
 			'Cache-Control': 'no-cache',
-			Connection: 'keep-alive'
+			Connection: 'keep-alive',
+			'X-Generate-Job-Id': job.jobId
 		})
 
+		if (!isNew) {
+			res.write(
+				`event: job_reused\ndata: ${JSON.stringify({
+					jobId: job.jobId,
+					status: job.status,
+					projectId: job.projectId,
+					totalSchedules: job.totalSchedules,
+					processedSchedules: job.processedSchedules,
+					totalTasks: job.totalTasks,
+					currentScheduleName: job.currentScheduleName,
+					updatedAt: job.updatedAt
+				})}\n\n`
+			)
+			res.end()
+			return
+		}
+
 		await aiGenService.generateProjectWithSSE(
-			req.file.path,
+			job.jobId,
+			req.file!.path,
 			projectId,
 			res,
 			{
@@ -89,6 +114,16 @@ class GanttController {
 				duration
 			}
 		)
+	}
+
+	getGenerateJobStatus = async (req: Request, res: Response, next: NextFunction) => {
+		const { jobId } = req.params
+		if (!jobId) throw new BadRequestError('jobId is required')
+
+		const job = aiGenService.getGenerateJobStatus(jobId)
+		if (!job) throw new NotFoundError('Generate job not found or expired')
+
+		new OKResponse('Get generate job status successfully!', 200, job).send(res)
 	}
 }
 

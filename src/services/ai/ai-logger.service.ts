@@ -105,7 +105,7 @@ class AiLogger {
 
 	private writeConsole(text: string) {
 		if (!ENABLE_CONSOLE_LOG) return
-		console.log(text)
+		// console.log(text)
 	}
 
 	logRequest(method: string, url: string, body?: any, headers?: Record<string, any>) {

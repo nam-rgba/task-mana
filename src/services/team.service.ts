@@ -157,6 +157,10 @@ class TeamService {
 		return this.teamRepository.save(team)
 	}
 
+	async findByDiscordServerId(discordServerId: string) {
+		return this.teamRepository.findByDiscordServerId(discordServerId)
+	}
+
 	async findAllTeam() {
 		const teams = await this.teamRepository.findAllTeam()
 		return teams

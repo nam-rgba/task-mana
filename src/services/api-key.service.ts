@@ -211,7 +211,6 @@ class ApiKeyService {
 		const apiKey = await this.apiKeyRepo.findByIdAndUserId(user.selectedApiKeyId, userId)
 		if (!apiKey || !apiKey.isActive) return null
 
-		console.log('in api-key-s, resolveSelectedApiKeyForUser: ', apiKey)
 		return {
 			id: apiKey.id,
 			decryptedKey: decryptValue(apiKey.key),

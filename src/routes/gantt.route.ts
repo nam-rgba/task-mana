@@ -13,6 +13,7 @@ ganttRouter.patch('/schedule', validate(GanttScheduleUpdateSchema), AsyncHandler
 
 // SSE: upload document → generate schedules + tasks with real-time progress
 ganttRouter.post('/generate', upload.single('file'), AsyncHandler(ganttController.generate))
+ganttRouter.get('/generate/jobs/:jobId', AsyncHandler(ganttController.getGenerateJobStatus))
 
 // Dependency sub-routes: /project/:projectId/gantt/task/:taskId/dependencies
 ganttRouter.get('/task/:taskId/dependencies', AsyncHandler(ganttController.getDependencies))

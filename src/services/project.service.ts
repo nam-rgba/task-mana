@@ -22,6 +22,10 @@ class ProjectService {
 		return await this.repo.getAllNameAndId()
 	}
 
+	async getProjectAndIdByTeamId(teamId: number) {
+		return await this.repo.getAllNameAndIdByTeamId(teamId)
+	}
+
 	async getProjectById(id: number) {
 		const project = await this.repo.findOneWithSchedules(id)
 		if (!project) {

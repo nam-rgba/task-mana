@@ -17,6 +17,7 @@ import { apiKeyService } from '~/services/api-key.service.js'
 import { RequestScope, usageTrackingService } from '~/services/usage-tracking.service.js'
 import { notificationService } from '~/services/notification/notification.service.js'
 import dayjs from 'dayjs'
+import { randomUUID } from 'crypto'
 
 type AiRequestContext = {
 	userId?: number
@@ -29,9 +30,34 @@ type ScheduleGenerationOptions = {
 	duration?: number
 }
 
+type GenerateJobStatus = 'running' | 'completed' | 'failed'
+
+type GenerateJob = {
+	jobId: string
+	projectId: number
+	userId?: number
+	status: GenerateJobStatus
+	startedAt: string
+	updatedAt: string
+	endedAt?: string
+	clientDisconnected: boolean
+	totalSchedules: number
+	processedSchedules: number
+	totalTasks: number
+	currentScheduleName?: string
+	error?: string
+}
+
 class AiGenService {
 	private aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000/ai'
 	private axiosInstance
+	private generateJobs = new Map<string, GenerateJob>()
+	private runningGenerateJobsByScope = new Map<string, string>()
+	private readonly generateJobTtlMs = 60 * 60 * 1000
+
+	private getGenerateJobScopeKey(projectId: number, userId?: number) {
+		return `${projectId}:${userId ?? 0}`
+	}
 
 	constructor() {
 		// Cấu hình axios instance với keep-alive và retry
@@ -189,6 +215,85 @@ class AiGenService {
 		return dayjs(startDate).format('DD/MM/YYYY')
 	}
 
+	private updateGenerateJob(jobId: string, patch: Partial<GenerateJob>) {
+		const current = this.generateJobs.get(jobId)
+		if (!current) return null
+
+		const updated: GenerateJob = {
+			...current,
+			...patch,
+			updatedAt: new Date().toISOString()
+		}
+
+		this.generateJobs.set(jobId, updated)
+		return updated
+	}
+
+	private scheduleGenerateJobCleanup(jobId: string) {
+		const cleanupTimer = setTimeout(() => {
+			const job = this.generateJobs.get(jobId)
+			if (!job) return
+			if (job.status === 'running') return
+			this.generateJobs.delete(jobId)
+		}, this.generateJobTtlMs)
+
+		cleanupTimer.unref?.()
+	}
+
+	createOrReuseGenerateJob(projectId: number, userId?: number) {
+		const scopeKey = this.getGenerateJobScopeKey(projectId, userId)
+		const runningJobId = this.runningGenerateJobsByScope.get(scopeKey)
+		if (runningJobId) {
+			const runningJob = this.generateJobs.get(runningJobId)
+			if (runningJob?.status === 'running') {
+				return {
+					job: runningJob,
+					isNew: false
+				}
+			}
+
+			this.runningGenerateJobsByScope.delete(scopeKey)
+		}
+
+		const jobId = randomUUID()
+		const now = new Date().toISOString()
+		const job: GenerateJob = {
+			jobId,
+			projectId,
+			userId,
+			status: 'running',
+			startedAt: now,
+			updatedAt: now,
+			clientDisconnected: false,
+			totalSchedules: 0,
+			processedSchedules: 0,
+			totalTasks: 0
+		}
+
+		this.generateJobs.set(jobId, job)
+		this.runningGenerateJobsByScope.set(scopeKey, jobId)
+		this.scheduleGenerateJobCleanup(jobId)
+
+		return {
+			job,
+			isNew: true
+		}
+	}
+
+	getGenerateJobStatus(jobId: string) {
+		return this.generateJobs.get(jobId) ?? null
+	}
+
+	private releaseRunningGenerateJob(jobId: string) {
+		const job = this.generateJobs.get(jobId)
+		if (!job) return
+		const scopeKey = this.getGenerateJobScopeKey(job.projectId, job.userId)
+		const runningJobId = this.runningGenerateJobsByScope.get(scopeKey)
+		if (runningJobId === jobId) {
+			this.runningGenerateJobsByScope.delete(scopeKey)
+		}
+	}
+
 	async generateTask(body: any, context?: AiRequestContext) {
 		return this.makeRequest('/llm/compose', body, RequestScope.TASK, { requestType: 'chat', ...context })
 	}
@@ -322,17 +427,54 @@ class AiGenService {
 	 * Sends SSE events to the Response object throughout the process.
 	 */
 	async generateProjectWithSSE(
+		jobId: string,
 		filePath: string,
 		projectId: number,
 		res: Response,
 		context?: AiRequestContext,
 		options?: ScheduleGenerationOptions
 	) {
+		const job = this.getGenerateJobStatus(jobId)
+		if (!job) {
+			throw new Error(`Generate job ${jobId} not found`)
+		}
+
+		let clientDisconnected = false
+
+		const onResponseClose = () => {
+			if (!res.writableEnded) {
+				clientDisconnected = true
+				this.updateGenerateJob(jobId, { clientDisconnected: true })
+				console.warn(`[SSE][project:${projectId}] Client disconnected while generating project data`)
+			}
+		}
+
+		res.on('close', onResponseClose)
+
 		const sendEvent = (event: string, data: any) => {
-			res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+			if (clientDisconnected || res.writableEnded || res.destroyed) return false
+			try {
+				res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+				this.updateGenerateJob(jobId, { updatedAt: new Date().toISOString() })
+				return true
+			} catch (error) {
+				clientDisconnected = true
+				this.updateGenerateJob(jobId, { clientDisconnected: true })
+				console.warn(
+					`[SSE][project:${projectId}] Failed to write event ${event}, continue processing in background`,
+					error
+				)
+				return false
+			}
 		}
 
 		try {
+			sendEvent('job_started', {
+				jobId,
+				projectId,
+				status: 'running'
+			})
+
 			// ── Step 1: Upload file to Cloudinary & generate phases from AI ──
 			sendEvent('phase_start', { message: 'Đang tải tài liệu lên và phân tích...' })
 
@@ -404,6 +546,7 @@ class AiGenService {
 			}
 
 			const phases: any[] = Array.isArray(aiPhases) ? aiPhases : (aiPhases?.phases ?? aiPhases?.data ?? [])
+			this.updateGenerateJob(jobId, { totalSchedules: phases.length })
 
 			// ── Step 2: Save schedules to DB ──
 			const scheduleRepo = AppDataSource.getRepository(Schedule)
@@ -466,8 +609,13 @@ class AiGenService {
 
 			for (let i = 0; i < savedSchedules.length; i++) {
 				const schedule = savedSchedules[i]
+				this.updateGenerateJob(jobId, {
+					currentScheduleName: schedule.name,
+					processedSchedules: i
+				})
 
 				sendEvent('task_progress', {
+					jobId,
 					scheduleIndex: i,
 					scheduleName: schedule.name,
 					totalSchedules: savedSchedules.length,
@@ -509,11 +657,15 @@ class AiGenService {
 
 					for (let j = 0; j < tasks.length; j++) {
 						const t = tasks[j]
-						const taskStartTs = t.start_date ? Math.floor(new Date(t.start_date).getTime() / 1000) : schedule.startDate
+						// Sử dụng dayjs để parse ngày, set giờ về 00:00:00
+						const taskStartTs = t.start_date ? dayjs(t.start_date).startOf('day').unix() : schedule.startDate
+						// Set deadline mặc định 17:30
+						const setDeadline1730 = (dateStr: string) =>
+							dayjs(dateStr).hour(17).minute(30).second(0).millisecond(0).unix()
 						const taskEndTs = t.end_date
-							? Math.floor(new Date(t.end_date).getTime() / 1000)
+							? setDeadline1730(t.end_date)
 							: t.due_date
-								? Math.floor(new Date(t.due_date).getTime() / 1000)
+								? setDeadline1730(t.due_date)
 								: schedule.endDate
 						const rawEstimateEffort = t.estimate_effort ?? t.story_point ?? t.story_points
 						const estimateEffort = Number.isFinite(Number(rawEstimateEffort)) ? Number(rawEstimateEffort) : 0
@@ -544,19 +696,31 @@ class AiGenService {
 					}
 
 					totalTasksCreated += savedTasks.length
+					this.updateGenerateJob(jobId, {
+						totalTasks: totalTasksCreated,
+						processedSchedules: i + 1,
+						currentScheduleName: schedule.name
+					})
 
 					// edit lại tổng số task tạo cho schedule:
 					schedule.totalTasks = savedTasks.length
 					await scheduleRepo.save(schedule)
 
 					sendEvent('task_done', {
+						jobId,
 						scheduleIndex: i,
 						scheduleName: schedule.name,
 						tasksCreated: savedTasks.length,
 						tasks: savedTasks
 					})
 				} catch (err: any) {
+					this.updateGenerateJob(jobId, {
+						processedSchedules: i + 1,
+						currentScheduleName: schedule.name
+					})
+
 					sendEvent('task_error', {
+						jobId,
 						scheduleIndex: i,
 						scheduleName: schedule.name,
 						error: err.message
@@ -576,14 +740,34 @@ class AiGenService {
 			)
 
 			// ── Step 4: Complete ──
+			this.updateGenerateJob(jobId, {
+				status: 'completed',
+				endedAt: new Date().toISOString(),
+				totalTasks: totalTasksCreated,
+				processedSchedules: savedSchedules.length,
+				currentScheduleName: undefined
+			})
+			this.releaseRunningGenerateJob(jobId)
+
 			sendEvent('complete', {
+				jobId,
 				totalSchedules: savedSchedules.length,
 				totalTasks: totalTasksCreated
 			})
 		} catch (err: any) {
+			this.updateGenerateJob(jobId, {
+				status: 'failed',
+				endedAt: new Date().toISOString(),
+				error: err?.message || 'Unknown error'
+			})
+			this.releaseRunningGenerateJob(jobId)
+
 			sendEvent('error', { message: err.message })
 		} finally {
-			res.end()
+			res.off('close', onResponseClose)
+			if (!res.writableEnded && !res.destroyed) {
+				res.end()
+			}
 		}
 	}
 
